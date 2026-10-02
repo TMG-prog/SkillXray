@@ -1,6 +1,6 @@
 # SkillXray
 
-SkillXray is a mobile app that shows job seekers where their skills stand. Upload your resume, see how ready you are for your target roles, and get recommendations for closing the gaps.
+SkillXray is a mobile app that shows job seekers where their skills stand. Upload your resume, see how ready you are for your target roles, and get tailored recommendations for closing the gaps. Keep track of your progress.
 
 ## Features
 
