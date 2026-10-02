@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "name": "SkillXray",
+    "slug": "skillxray-mobile",
+    "scheme": "skillxray",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": ["**/*"],
+    "ios": { "supportsTablet": true },
+    "android": { "package": "com.skillxray.mobile" },
+    "web": { "bundler": "metro" },
+    "plugins": ["expo-router"]
+  }
+}
