@@ -3,6 +3,7 @@ import { Stack } from "expo-router";
 import { ActivityIndicator, View } from "react-native";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
+import { AppDataProvider } from "@/state/appdatacontext";
 
 export default function RootLayout() {
   const [session, setSession] = useState<Session | null>(null);
@@ -27,24 +28,36 @@ export default function RootLayout() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Protected guard={!!session}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen
-          name="resume-upload"
-          options={{
-            presentation: "modal",
-            headerShown: true,
-            title: "Upload Resume",
-            headerStyle: { backgroundColor: "#03110F" },
-            headerTintColor: "#EEF7F4",
-          }}
-        />
-      </Stack.Protected>
+    <AppDataProvider>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Protected guard={!!session}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen
+            name="resume-upload"
+            options={{
+              presentation: "modal",
+              headerShown: true,
+              title: "Upload Resume",
+              headerStyle: { backgroundColor: "#03110F" },
+              headerTintColor: "#EEF7F4",
+            }}
+          />
+          <Stack.Screen
+            name="add-course"
+            options={{
+              presentation: "modal",
+              headerShown: true,
+              title: "Add a Course",
+              headerStyle: { backgroundColor: "#03110F" },
+              headerTintColor: "#EEF7F4",
+            }}
+          />
+        </Stack.Protected>
 
-      <Stack.Protected guard={!session}>
-        <Stack.Screen name="login" />
-      </Stack.Protected>
-    </Stack>
+        <Stack.Protected guard={!session}>
+          <Stack.Screen name="login" />
+        </Stack.Protected>
+      </Stack>
+    </AppDataProvider>
   );
 }

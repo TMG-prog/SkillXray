@@ -25,11 +25,15 @@ export default function TabsLayout() {
       />
       <Tabs.Screen
         name="courses"
-        options={{ title: "Courses", tabBarIcon: ({ color, size }) => <Feather name="book-open" color={color} size={size} /> }}
+        options={{ title: "Recommended", tabBarIcon: ({ color, size }) => <Feather name="star" color={color} size={size} /> }}
       />
       <Tabs.Screen
         name="analysis"
         options={{ title: "Analysis", tabBarIcon: ({ color, size }) => <Feather name="crop" color={color} size={size} /> }}
+      />
+      <Tabs.Screen
+        name="my-course"
+        options={{ title: "My Courses", tabBarIcon: ({ color, size }) => <Feather name="book" color={color} size={size} /> }}
       />
     </Tabs>
   );

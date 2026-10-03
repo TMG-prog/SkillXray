@@ -97,7 +97,12 @@ export default function HomeScreen() {
         >
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.greeting}>Hello, {userName ?? "there"}</Text>
+            <View style={styles.headerTop}>
+              <Text style={styles.greeting}>Hello, {userName ?? "there"}</Text>
+              <Pressable onPress={() => supabase.auth.signOut()} hitSlop={8} accessibilityRole="button">
+                <Text style={styles.signOut}>Sign out</Text>
+              </Pressable>
+            </View>
             <Text style={styles.title}>
               Let's build your career together.
             </Text>
@@ -211,6 +216,18 @@ const styles = StyleSheet.create({
   header: {
     marginTop: spacing.md,
     marginBottom: spacing.lg,
+  },
+
+  headerTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  signOut: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: brand.green,
   },
 
   greeting: {

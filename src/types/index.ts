@@ -51,3 +51,16 @@ export interface Recommendation {
   learningResourceId: string;
   relevanceScore: number;
 }
+export type TrackedCourseStatus = "not_started" | "in_progress" | "completed";
+
+export interface TrackedCourse {
+  id: string;
+  profileId: string;
+  title: string;
+  provider: string;
+  url?: string;
+  status: TrackedCourseStatus;
+  enrolledAt: string;   // ISO date
+  deadline?: string;    // ISO date, optional — some courses are self-paced
+  notes?: string;
+}

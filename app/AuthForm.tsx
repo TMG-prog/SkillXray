@@ -9,7 +9,6 @@ import {
   View,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
 import { supabase } from "@/lib/supabase";
 
 export const theme = {
@@ -27,12 +26,15 @@ export const theme = {
 const GRADIENT = [theme.cyan, theme.mint] as const;
 const SERIF = Platform.select({ ios: "Georgia", android: "serif", default: "serif" });
 
+// Supabase's JS passkey methods run the WebAuthn ceremony through the browser
+// (navigator.credentials), which React Native doesn't have. Web only for now.
+const PASSKEYS_ENABLED = Platform.OS === "web";
+
 const BARS = [10, 22, 15, 30, 19, 26];
 
 type Mode = "signIn" | "signUp";
 
 export default function AuthForm() {
-  const router = useRouter();
   const [mode, setMode] = useState<Mode>("signIn");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -53,6 +55,10 @@ export default function AuthForm() {
       setError("Please fill in all required fields.");
       return;
     }
+    if (!isSignIn && password.length < 8) {
+      setError("Use at least 8 characters for your password.");
+      return;
+    }
 
     setLoading(true);
 
@@ -62,42 +68,33 @@ export default function AuthForm() {
         password,
       });
       if (error) {
-        setError("Email or password is incorrect.");
+        setError(
+          error.message.toLowerCase().includes("not confirmed")
+            ? "Confirm your email first. Check your inbox for the link."
+            : "Email or password is incorrect."
+        );
       }
     } else {
+      // The full name travels as user metadata. A database trigger copies it
+      // into `profiles`, so no client-side insert is needed (see the SQL).
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: email.trim(),
         password,
-        options: {
-          data: {
-            full_name: fullName.trim(),
-          },
-        },
+        options: { data: { full_name: fullName.trim() } },
       });
 
       if (signUpError) {
         setError(signUpError.message);
-      } else {
-        if (data.user) {
-          const { error: profileError } = await supabase
-            .from("profiles")
-            .upsert(
-              { id: data.user.id, full_name: fullName.trim() },
-              { onConflict: "id" }
-            );
-
-          if (profileError) {
-            console.warn("Profile sync warning:", profileError.message);
-          }
-        }
-
-        setNotice("Account created successfully!");
+      } else if (!data.session) {
+        // Email confirmation is on: there is no session yet.
+        setNotice("Check your inbox to confirm your email, then sign in.");
+      } else if (PASSKEYS_ENABLED) {
+        // Registering a passkey needs an active session.
         try {
           await supabase.auth.registerPasskey();
         } catch {
-          // Passkey optional fallback
+          // Optional: ignore if the user skips it.
         }
-       
       }
     }
 
@@ -110,9 +107,7 @@ export default function AuthForm() {
     setLoading(true);
     try {
       const { error } = await supabase.auth.signInWithPasskey();
-      if (error) {
-        setError("Passkey sign-in failed or was cancelled.");
-      }
+      if (error) setError("Passkey sign-in failed or was cancelled.");
     } catch {
       setError("Passkeys are not supported on this device.");
     }
@@ -142,7 +137,7 @@ export default function AuthForm() {
 
       {!isSignIn && (
         <>
-          <Text style={styles.label}>Full Name</Text>
+          <Text style={styles.label}>Full name</Text>
           <TextInput
             style={[styles.input, focused === "name" && styles.inputFocused]}
             value={fullName}
@@ -151,6 +146,10 @@ export default function AuthForm() {
             onBlur={() => setFocused(null)}
             placeholder="First and last name"
             placeholderTextColor={theme.muted}
+            autoCapitalize="words"
+            autoComplete="name"
+            textContentType="name"
+            returnKeyType="next"
           />
         </>
       )}
@@ -167,6 +166,8 @@ export default function AuthForm() {
         autoCapitalize="none"
         autoComplete="email"
         keyboardType="email-address"
+        textContentType="emailAddress"
+        returnKeyType="next"
       />
 
       <Text style={styles.label}>Password</Text>
@@ -185,22 +186,37 @@ export default function AuthForm() {
           placeholderTextColor={theme.muted}
           secureTextEntry={!showPassword}
           autoCapitalize="none"
+          autoComplete={isSignIn ? "current-password" : "new-password"}
+          textContentType={isSignIn ? "password" : "newPassword"}
+          returnKeyType="go"
+          onSubmitEditing={submit}
         />
         <Pressable
           style={styles.toggle}
           onPress={() => setShowPassword((v) => !v)}
+          accessibilityRole="button"
+          accessibilityLabel={showPassword ? "Hide password" : "Show password"}
           hitSlop={8}
         >
           <Text style={styles.toggleText}>{showPassword ? "Hide" : "Show"}</Text>
         </Pressable>
       </View>
 
-      {error && <Text style={styles.error}>{error}</Text>}
-      {notice && <Text style={styles.notice}>{notice}</Text>}
+      {error && (
+        <Text style={styles.error} accessibilityLiveRegion="polite">
+          {error}
+        </Text>
+      )}
+      {notice && (
+        <Text style={styles.notice} accessibilityLiveRegion="polite">
+          {notice}
+        </Text>
+      )}
 
       <Pressable
         onPress={submit}
         disabled={loading}
+        accessibilityRole="button"
         style={({ pressed }) => [
           styles.buttonWrap,
           pressed && { opacity: 0.85 },
@@ -217,15 +233,20 @@ export default function AuthForm() {
             <ActivityIndicator color={theme.onGradient} />
           ) : (
             <Text style={styles.buttonText}>
-              {isSignIn ? "Sign in" : "Complete Sign Up"}
+              {isSignIn ? "Sign in" : "Create account"}
             </Text>
           )}
         </LinearGradient>
       </Pressable>
 
-      {isSignIn && (
-        <Pressable style={styles.passkeyButton} onPress={handlePasskeySignIn} disabled={loading}>
-          <Text style={styles.passkeyButtonText}>Sign in with  Passkey</Text>
+      {isSignIn && PASSKEYS_ENABLED && (
+        <Pressable
+          style={styles.passkeyButton}
+          onPress={handlePasskeySignIn}
+          disabled={loading}
+          accessibilityRole="button"
+        >
+          <Text style={styles.passkeyButtonText}>Sign in with a passkey</Text>
         </Pressable>
       )}
 
@@ -236,6 +257,7 @@ export default function AuthForm() {
           setError(null);
           setNotice(null);
         }}
+        accessibilityRole="button"
       >
         <Text style={styles.switchText}>
           {isSignIn ? "New here? Create an account" : "Have an account? Sign in"}
