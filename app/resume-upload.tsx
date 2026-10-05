@@ -1,15 +1,18 @@
-import { View, ScrollView, StyleSheet } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { ResumeUploader } from "@/features/resume/ResumeUploader";
-import { spacing } from "@/components/ui/theme";
+import { brand } from "@/components/ui/brand";
 
 export default function ResumeUploadScreen() {
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <View>
+    <View style={styles.root}>
+      <ScrollView contentContainerStyle={styles.container}>
         <ResumeUploader />
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
-const styles = StyleSheet.create({ container: { padding: 16 } });
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: brand.bg },
+  container: { paddingBottom: 40 },
+});

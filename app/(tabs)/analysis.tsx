@@ -3,6 +3,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Circle, Defs, LinearGradient as SvgGradient, Stop } from "react-native-svg";
 import { useRouter } from "expo-router";
+import { Feather } from "@expo/vector-icons";
+import { useAppData } from "@/state/appdatacontext";
 import { brand, SERIF } from "@/components/ui/brand";
 
 type Severity = "high" | "medium" | "low";
@@ -20,14 +22,50 @@ const CIRC = 2 * Math.PI * RADIUS;
 
 export default function AnalysisScreen() {
   const router = useRouter();
+  const { analysis } = useAppData();
 
-  const readinessScore = 65;
+  if (!analysis) {
+    return (
+      <View style={styles.root}>
+        <LinearGradient
+          colors={["rgba(37,217,208,0.22)", "rgba(37,217,208,0)"]}
+          style={styles.glow}
+          pointerEvents="none"
+        />
+        <SafeAreaView style={styles.safeArea} edges={["top"]}>
+          <View style={styles.emptyContainer}>
+            <View style={styles.emptyIconCircle}>
+              <Feather name="bar-chart-2" size={26} color={brand.cyan} />
+            </View>
+            <Text style={styles.emptyTitle}>No analysis yet</Text>
+            <Text style={styles.emptyMessage}>
+              Upload your resume to see how your skills stack up against your target role.
+            </Text>
+            <Pressable
+              onPress={() => router.push("/resume-upload")}
+              style={({ pressed }) => [styles.buttonWrap, pressed && { opacity: 0.85 }]}
+            >
+              <LinearGradient
+                colors={[brand.cyan, brand.mint]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.button}
+              >
+                <Text style={styles.buttonText}>Upload your resume</Text>
+              </LinearGradient>
+            </Pressable>
+          </View>
+        </SafeAreaView>
+      </View>
+    );
+  }
 
-  const gaps: { skill: string; severity: Severity; score: number }[] = [
-    { skill: "Python", severity: "high", score: 40 },
-    { skill: "Data Analysis", severity: "medium", score: 60 },
-    { skill: "Project Management", severity: "medium", score: 65 },
-  ];
+  const readinessScore = Math.round(analysis.readiness);
+  const gaps = analysis.gaps.map((g) => ({
+    skill: g.skill,
+    severity: g.severity,
+    score: Math.round(g.fill * 100),
+  }));
 
   return (
     <View style={styles.root}>
@@ -41,7 +79,6 @@ export default function AnalysisScreen() {
         <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
           <Text style={styles.screenTitle}>Skill gap analysis</Text>
 
-          {/* Readiness summary: gradient hairline border, progress ring */}
           <LinearGradient
             colors={["rgba(37,217,208,0.75)", "rgba(198,243,168,0.25)"]}
             start={{ x: 0, y: 0 }}
@@ -187,4 +224,17 @@ const styles = StyleSheet.create({
   buttonWrap: { marginTop: 28, borderRadius: 999, overflow: "hidden" },
   button: { height: 50, alignItems: "center", justifyContent: "center" },
   buttonText: { color: brand.onGradient, fontSize: 15, fontWeight: "700" },
+
+  emptyContainer: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 32 },
+  emptyIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "rgba(37,217,208,0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 20,
+  },
+  emptyTitle: { fontFamily: SERIF, fontSize: 24, color: brand.text, textAlign: "center", marginBottom: 10 },
+  emptyMessage: { fontSize: 14, lineHeight: 20, color: brand.muted, textAlign: "center", marginBottom: 8 },
 });

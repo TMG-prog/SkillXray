@@ -6,9 +6,26 @@ export interface Profile {
 
 export interface Resume {
   id: string;
-  profileId: string;
-  fileUrl: string;
-  uploadedAt: string;
+  user_id: string;
+  file_url: string;
+  status: "uploaded" | "processing" | "analyzed" | "failed";
+  uploaded_at: string;
+}
+
+export interface SkillAnalysis {
+  id: string;
+  user_id: string;
+  resume_id: string;
+  job_role_id: string;
+  readiness_index: number;
+  created_at: string;
+}
+
+export interface SkillGap {
+  id: string;
+  analysis_id: string;
+  skill_id: string;
+  gap_severity: number;
 }
 
 export interface Skill {
@@ -23,20 +40,7 @@ export interface JobRole {
   description: string;
 }
 
-export interface SkillAnalysis {
-  id: string;
-  resumeId: string;
-  jobRoleId: string;
-  careerReadinessIndex: number;
-  createdAt: string;
-}
 
-export interface SkillGap {
-  id: string;
-  skillAnalysisId: string;
-  skillId: string;
-  severity: number;
-}
 
 export interface LearningResource {
   id: string;

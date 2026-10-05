@@ -20,7 +20,7 @@ export interface Analysis {
 
 interface AppDataContextValue {
   analysis: Analysis | null;
-  completeResumeUpload: (fileName: string) => void;
+  completeResumeUpload: (analysis: Analysis) => void;
   courses: TrackedCourse[];
   addCourse: (course: Omit<TrackedCourse, "id" | "profileId" | "enrolledAt" | "status">) => void;
   updateCourseStatus: (id: string, status: TrackedCourseStatus) => void;
@@ -44,8 +44,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [courses, setCourses] = useState<TrackedCourse[]>([]);
 
-  function completeResumeUpload(fileName: string) {
-    setAnalysis({ resumeFileName: fileName, ...MOCK_ANALYSIS_RESULT });
+  function completeResumeUpload(analysis: Analysis) {
+    setAnalysis(analysis);
   }
 
   function addCourse(course: Omit<TrackedCourse, "id" | "profileId" | "enrolledAt" | "status">) {

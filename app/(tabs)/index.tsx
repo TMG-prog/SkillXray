@@ -1,4 +1,4 @@
-import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
@@ -6,6 +6,7 @@ import { useRouter } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { radius, spacing } from "@/components/ui/theme";
 import { useEffect, useState } from "react";
+import { useAppData } from "@/state/appdatacontext";
 
 // Muted dark-green palette
 const brand = {
@@ -33,6 +34,7 @@ const QUICK_ACTIONS = [
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { analysis } = useAppData();
   const [userName, setUserName] = useState<string | null>(null);
 
   useEffect(() => {
@@ -41,7 +43,6 @@ export default function HomeScreen() {
     async function fetchUserProfile() {
       try {
         const { data: { user } } = await supabase.auth.getUser();
-
         if (!isMounted) return;
 
         if (user) {
@@ -71,31 +72,21 @@ export default function HomeScreen() {
     }
 
     fetchUserProfile();
-
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, []);
+
+  const hasAnalysis = !!analysis;
 
   return (
     <View style={styles.root}>
-      {/* Very subtle background glow */}
       <LinearGradient
-        colors={[
-          "rgba(124,201,165,0.07)",
-          "rgba(124,201,165,0.02)",
-          "rgba(124,201,165,0)",
-        ]}
+        colors={["rgba(124,201,165,0.07)", "rgba(124,201,165,0.02)", "rgba(124,201,165,0)"]}
         style={styles.glow}
         pointerEvents="none"
       />
 
       <SafeAreaView style={styles.safeArea} edges={["top"]}>
-        <ScrollView
-          contentContainerStyle={styles.container}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Header */}
+        <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
             <View style={styles.headerTop}>
               <Text style={styles.greeting}>Hello, {userName ?? "there"}</Text>
@@ -103,42 +94,38 @@ export default function HomeScreen() {
                 <Text style={styles.signOut}>Sign out</Text>
               </Pressable>
             </View>
-            <Text style={styles.title}>
-              Let's build your career together.
-            </Text>
+            <Text style={styles.title}>Let's build your career together.</Text>
           </View>
 
-          {/* Main card */}
           <View style={styles.heroBorder}>
             <View style={styles.heroInner}>
               <View style={styles.heroRow}>
                 <View style={styles.iconCircle}>
-                  <Feather
-                    name="file-text"
-                    size={21}
-                    color={brand.green}
-                  />
+                  <Feather name="file-text" size={21} color={brand.green} />
                 </View>
 
                 <View style={styles.heroText}>
                   <Text style={styles.heroTitle}>
-                    Analyze your skills
+                    {hasAnalysis ? "Your readiness score" : "Analyze your skills"}
                   </Text>
-
                   <Text style={styles.heroSubtitle}>
-                    Upload your resume and see how ready you are for your
-                    target roles.
+                    {hasAnalysis
+                      ? `You're at ${Math.round(analysis!.readiness)}% readiness for your target role. Re-run the analysis any time you update your resume.`
+                      : "Upload your resume and see how ready you are for your target roles."}
                   </Text>
                 </View>
+
+                {hasAnalysis && (
+                  <View style={styles.readinessChip}>
+                    <Text style={styles.readinessChipText}>{Math.round(analysis!.readiness)}%</Text>
+                  </View>
+                )}
               </View>
 
               <Pressable
                 onPress={() => router.push("/resume-upload")}
                 accessibilityRole="button"
-                style={({ pressed }) => [
-                  styles.buttonWrap,
-                  pressed && { opacity: 0.85 },
-                ]}
+                style={({ pressed }) => [styles.buttonWrap, pressed && { opacity: 0.85 }]}
               >
                 <LinearGradient
                   colors={[brand.green, brand.greenSoft]}
@@ -147,17 +134,14 @@ export default function HomeScreen() {
                   style={styles.button}
                 >
                   <Text style={styles.buttonText}>
-                    Start analysis
+                    {hasAnalysis ? "Re-analyze your resume" : "Start analysis"}
                   </Text>
                 </LinearGradient>
               </Pressable>
             </View>
           </View>
 
-          {/* Quick actions */}
-          <Text style={styles.sectionTitle}>
-            Quick actions
-          </Text>
+          <Text style={styles.sectionTitle}>Quick actions</Text>
 
           <View style={styles.quickRow}>
             {QUICK_ACTIONS.map((a) => (
@@ -165,22 +149,12 @@ export default function HomeScreen() {
                 key={a.route}
                 onPress={() => router.push(a.route)}
                 accessibilityRole="button"
-                style={({ pressed }) => [
-                  styles.actionBox,
-                  pressed && { opacity: 0.8 },
-                ]}
+                style={({ pressed }) => [styles.actionBox, pressed && { opacity: 0.8 }]}
               >
                 <View style={styles.actionIconCircle}>
-                  <Feather
-                    name={a.icon}
-                    size={19}
-                    color={brand.green}
-                  />
+                  <Feather name={a.icon} size={19} color={brand.green} />
                 </View>
-
-                <Text style={styles.actionText}>
-                  {a.label}
-                </Text>
+                <Text style={styles.actionText}>{a.label}</Text>
               </Pressable>
             ))}
           </View>
@@ -191,60 +165,15 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: brand.bg,
-  },
-
-  safeArea: {
-    flex: 1,
-  },
-
-  glow: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 280,
-  },
-
-  container: {
-    padding: spacing.md,
-    paddingBottom: 40,
-  },
-
-  header: {
-    marginTop: spacing.md,
-    marginBottom: spacing.lg,
-  },
-
-  headerTop: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-
-  signOut: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: brand.green,
-  },
-
-  greeting: {
-    fontSize: 15,
-    color: brand.muted,
-    marginBottom: 6,
-  },
-
-  title: {
-    fontFamily: SERIF,
-    fontSize: 32,
-    lineHeight: 37,
-    fontWeight: "400",
-    letterSpacing: -0.5,
-    color: brand.text,
-  },
-
+  root: { flex: 1, backgroundColor: brand.bg },
+  safeArea: { flex: 1 },
+  glow: { position: "absolute", top: 0, left: 0, right: 0, height: 280 },
+  container: { padding: spacing.md, paddingBottom: 40 },
+  header: { marginTop: spacing.md, marginBottom: spacing.lg },
+  headerTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  signOut: { fontSize: 14, fontWeight: "600", color: brand.green },
+  greeting: { fontSize: 15, color: brand.muted, marginBottom: 6 },
+  title: { fontFamily: SERIF, fontSize: 32, lineHeight: 37, fontWeight: "400", letterSpacing: -0.5, color: brand.text },
   heroBorder: {
     borderRadius: radius.lg ?? 20,
     borderWidth: 1,
@@ -252,102 +181,39 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
     backgroundColor: brand.surface,
   },
-
-  heroInner: {
-    backgroundColor: brand.surface,
-    borderRadius: radius.lg ?? 20,
-    padding: spacing.lg,
-  },
-
-  heroRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: spacing.md,
-    marginBottom: spacing.lg,
-  },
-
-  heroText: {
-    flex: 1,
-  },
-
-  heroTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: brand.text,
-    marginBottom: 4,
-  },
-
-  heroSubtitle: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: brand.muted,
-  },
-
+  heroInner: { backgroundColor: brand.surface, borderRadius: radius.lg ?? 20, padding: spacing.lg },
+  heroRow: { flexDirection: "row", alignItems: "flex-start", gap: spacing.md, marginBottom: spacing.lg },
+  heroText: { flex: 1 },
+  heroTitle: { fontSize: 18, fontWeight: "700", color: brand.text, marginBottom: 4 },
+  heroSubtitle: { fontSize: 14, lineHeight: 20, color: brand.muted },
   iconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
+    width: 44, height: 44, borderRadius: 22,
+    alignItems: "center", justifyContent: "center",
     backgroundColor: "rgba(124,201,165,0.08)",
-    borderWidth: 1,
-    borderColor: "rgba(124,201,165,0.10)",
+    borderWidth: 1, borderColor: "rgba(124,201,165,0.10)",
   },
-
-  buttonWrap: {
+  readinessChip: {
+    backgroundColor: "rgba(124,201,165,0.12)",
     borderRadius: 999,
-    overflow: "hidden",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    alignSelf: "flex-start",
   },
-
-  button: {
-    height: 48,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  buttonText: {
-    color: brand.onGradient,
-    fontSize: 15,
-    fontWeight: "700",
-  },
-
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: brand.text,
-    marginBottom: spacing.md,
-  },
-
-  quickRow: {
-    flexDirection: "row",
-    gap: spacing.md,
-  },
-
+  readinessChipText: { color: brand.green, fontWeight: "700", fontSize: 13 },
+  buttonWrap: { borderRadius: 999, overflow: "hidden" },
+  button: { height: 48, alignItems: "center", justifyContent: "center" },
+  buttonText: { color: brand.onGradient, fontSize: 15, fontWeight: "700" },
+  sectionTitle: { fontSize: 18, fontWeight: "700", color: brand.text, marginBottom: spacing.md },
+  quickRow: { flexDirection: "row", gap: spacing.md },
   actionBox: {
-    flex: 1,
-    backgroundColor: brand.surface,
-    borderWidth: 1,
-    borderColor: brand.border,
-    borderRadius: 16,
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.md,
-    alignItems: "center",
-    gap: spacing.sm,
+    flex: 1, backgroundColor: brand.surface, borderWidth: 1, borderColor: brand.border,
+    borderRadius: 16, paddingVertical: spacing.lg, paddingHorizontal: spacing.md,
+    alignItems: "center", gap: spacing.sm,
   },
-
   actionIconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
+    width: 40, height: 40, borderRadius: 20,
+    alignItems: "center", justifyContent: "center",
     backgroundColor: "rgba(124,201,165,0.07)",
   },
-
-  actionText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: brand.text,
-    textAlign: "center",
-  },
+  actionText: { fontSize: 13, fontWeight: "600", color: brand.text, textAlign: "center" },
 });
