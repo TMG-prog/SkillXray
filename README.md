@@ -216,49 +216,7 @@ These are required for authentication, database access, storage, and edge functi
 
 ---
 
-## Current Implementation Status
-
-The project is a functional prototype.
-
-- **Done:** authentication, resume upload to Supabase Storage, resume records, analysis and skill-gap data model, readiness display, and the ML pipeline for skill extraction and ESCO normalization (validated on a job-posting sample).
-- **In progress:** connecting the ML pipeline to the `parse-resume` edge function. Parts of the analysis shown in the app are still mocked or placeholder-driven until that integration is complete. Because Deno edge functions cannot run PyTorch models directly, the planned approach is to host the pipeline as a separate inference service that the edge function calls.
-- **Planned:** the skill-gap comparison, Career Readiness Index, and recommendation ranking.
 
 ---
 
-## Known Limitations
 
-- **ESCO coverage.** ESCO is a general labour-market taxonomy, so highly specific technical terms (for example power-systems engineering jargon) often have no close match and stay unmatched. O*NET's Technology Skills data, linked through the official ESCO–O*NET crosswalk, is a possible extension.
-- **Domain shift.** JobBERT was trained on job-posting language, while resumes are phrased differently, so resume extraction needs manual spot-checking.
-- **Source data quality.** The scraped datasets contain formatting artifacts that cleaning cannot fully recover.
-- **Span granularity.** JobBERT tags full competency clauses as skills, not only keywords, so some extracted spans are long phrases.
-
----
-
-## Roadmap
-
-- [x] Mobile app: authentication, resume upload, analysis and course screens
-- [x] Supabase data model and storage
-- [x] ML pipeline: text cleaning, JobBERT extraction, ESCO normalization
-- [ ] Integrate the ML pipeline with the `parse-resume` edge function
-- [ ] Skill-gap comparison (candidate vs. target role, in ESCO-concept space)
-- [ ] Career Readiness Index
-- [ ] Learning-resource recommendation ranking
-- [ ] Evaluation: precision/recall/F1 for extraction, NDCG and MAP for recommendations
-- [ ] User dashboards for skill progression
-
----
-
-## Conclusion
-
-SkillXray combines mobile development, cloud services, and NLP into a single career-guidance product. It takes raw resume content, turns it into structured skill insight, and gives users a clearer path toward employment readiness. Beyond the software engineering exercise, it is a proof of concept for personalized skill intelligence.
-
----
-
-## License
-
-Intended for academic and portfolio use unless otherwise stated by the project owner.
-
-## Author
-
-_Your name · Admission number · Supervisor_
