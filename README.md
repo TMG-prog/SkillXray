@@ -1,8 +1,6 @@
 # SkillXray
 
-SkillXray is a mobile-first career readiness application built to help job seekers understand how close they are to meeting the requirements of their target roles. The app allows users to upload a resume, identify the skills they already demonstrate, compare their profile against a target role, and receive recommendations for the gaps they still need to close.
-
-This project was created as a final-year software development project to explore how AI-assisted career guidance can be made accessible through a mobile app experience. Instead of relying on static job-seeker advice, SkillXray turns resume data into actionable insight that helps users make practical upskilling decisions.
+SkillXray is a mobile-first career readiness application that helps job seekers understand how close they are to meeting the requirements of their target roles. Users upload a resume, see which skills they already demonstrate, compare their profile against a target role, and get recommendations for the gaps they still need to close.
 
 ---
 
@@ -15,89 +13,120 @@ Many job seekers do not know which of their skills are actually relevant to the 
 - do not know what to study next
 - lose motivation because they cannot see progress clearly
 
-This creates a gap between candidate capability and job-market demand. SkillXray aims to reduce that uncertainty by turning resume content into a structured readiness view.
+This creates a gap between candidate capability and job-market demand. SkillXray reduces that uncertainty by turning resume content into a structured readiness view.
 
 ---
 
-## Project Aim
-
-The core aim of SkillXray is to help users answer three practical questions:
-
-1. How ready am I for the role I want?
-2. Which skills do I already have?
-3. What should I learn next to close the gap?
-
-The application is designed to support this through an end-to-end workflow: resume upload, resume analysis, readiness calculation, gap identification, and recommendation delivery.
-
----
 
 ## Core Features
 
-### 1. Resume Upload
-Users can upload a PDF or Word document directly from the mobile app. The uploaded file is stored in Supabase storage and linked to the authenticated user profile.
+**1. Resume Upload.** Users upload a PDF or Word document from the mobile app. The file is stored in Supabase Storage and linked to the authenticated user profile.
 
-### 2. Skill and Readiness Analysis
-When the resume is uploaded, the system triggers a processing workflow that checks the resume against a target role or inferred profile. The app calculates an overall readiness score and identifies skill gaps.
+**2. Skill and Readiness Analysis.** Uploading a resume triggers a processing workflow that checks it against a target role or inferred profile, then calculates an overall readiness score.
 
-### 3. Gap Reporting
-The system highlights the skills that are missing, weak, or underrepresented. This gives the user a clear picture of the exact areas they need to improve.
+**3. Gap Reporting.** The app highlights skills that are missing, weak, or underrepresented, so the user sees exactly where to improve.
 
-### 4. Learning Recommendations
-After the gaps are identified, the app presents recommendations that guide the user toward relevant skills or learning resources. This transforms the analysis from a passive result into an actionable growth plan.
+**4. Learning Recommendations.** Identified gaps are turned into recommendations for relevant skills or learning resources, so the result is an actionable plan rather than a passive report.
 
-### 5. Progress Tracking
-The user can keep track of their learning and course engagement over time. This creates a loop in which the app supports both self-assessment and ongoing development.
+**5. Progress Tracking.** Users can track their learning and course engagement over time.
 
 ---
 
-## System Overview
+## System Architecture
 
-SkillXray follows a layered architecture that separates the frontend experience from the backend processing and data services.
+```
+┌──────────────────────────┐
+│  Mobile app              │  React Native · Expo · TypeScript
+│  (auth, upload, reports) │
+└────────────┬─────────────┘
+             │
+┌────────────▼─────────────┐
+│  Supabase                │  Auth · Postgres · Storage
+│  (data + file storage)   │
+└────────────┬─────────────┘
+             │
+┌────────────▼─────────────┐
+│  Edge Function           │  Deno · parse-resume
+│  (processing workflow)   │
+└────────────┬─────────────┘
+             │
+┌────────────▼─────────────┐
+│  ML pipeline             │  Python · JobBERT · Sentence-BERT · ESCO
+│  (skill extraction)      │  (developed in Colab, integration in progress)
+└──────────────────────────┘
+```
 
 ### Frontend Layer
-The mobile app is built with React Native and Expo. It provides the user interface for:
-
-- authentication
-- resume upload
-- analysis display
-- course tracking
-- recommendations
-
-The application state is managed through a context layer so that analysis results can be shared across screens without duplicating data-fetching logic.
+Built with React Native and Expo. It provides authentication, resume upload, analysis display, course tracking, and recommendations. Application state is managed through a context layer so analysis results are shared across screens without duplicating data-fetching logic.
 
 ### Data and Storage Layer
-Supabase is used for key application data, including:
-
-- authentication
-- user profiles
-- resume metadata
-- analysis records
-- skill gap records
-- learning/course tracking data
-
-This gives the app a cloud-backed data layer with easy integration for both mobile and server-side workflows.
+Supabase provides authentication, user profiles, resume metadata, analysis records, skill-gap records, and learning/course tracking data.
 
 ### Processing Layer
-Resume processing is handled through Deno-based Supabase Edge Functions. These functions are responsible for receiving the uploaded resume reference, checking the processing status, and orchestrating the analysis workflow.
-
-In the current project structure, this layer acts as the bridge between the client app and the skill analysis process. The function code is designed to be extended with more advanced resume parsing and recommendation logic in the future.
+Resume processing runs through Deno-based Supabase Edge Functions, which receive the uploaded resume reference, check processing status, and orchestrate the analysis workflow. This layer is the bridge between the app and the skill analysis process.
 
 ### Business Logic Layer
-The app includes service modules that orchestrate calls such as:
+Service modules handle uploading a resume, requesting analysis, polling for status, retrieving skill gaps, and storing readiness data in app state. They keep client-side logic separate from the UI.
 
-- uploading a resume
-- requesting analysis
-- polling for status updates
-- retrieving skill gaps
-- storing readiness data in app state
+### ML Layer
+A Python pipeline extracts skills from text and maps them onto the ESCO taxonomy. It is described in full below.
 
-These services isolate the client-side logic from the UI and help keep the application maintainable.
+---
+
+## Technology Stack
+
+| Area | Technology |
+|---|---|
+| Mobile app | React Native, Expo, Expo Router, TypeScript |
+| State management | React Context |
+| Backend services | Supabase (Auth, Postgres, Storage) |
+| Serverless processing | Supabase Edge Functions (Deno) |
+| Skill extraction | JobBERT (`jjzha/jobbert_skill_extraction`) |
+| Semantic matching | Sentence-BERT (`all-MiniLM-L6-v2`) |
+| NLP preprocessing | spaCy (`en_core_web_sm`) |
+| Skills taxonomy | ESCO (skills, occupations, occupation-skill relations) |
+| ML environment | Google Colab (GPU), Google Drive |
+
+---
+
+## Machine Learning Pipeline
+
+The ML component turns free-text resumes and job postings into structured, comparable skill data.
+
+```
+Raw text → Cleaning → JobBERT extraction → Span post-processing → ESCO normalization → Skill-gap comparison
+```
+
+**1. Text cleaning.** The Kaggle job-posting text lost its sentence and bullet boundaries when HTML was stripped, so sentences run together (`"...sales.Responsible for..."`). Cleaning restores those boundaries. Resumes separate bullets with plain newlines, so newlines are treated as boundaries for resumes only. Text is deliberately not lowercased: JobBERT is a cased model, and the boundary-recovery rule depends on case.
+
+**2. Skill extraction.** Text is split into sentences with spaCy and passed through JobBERT, using `aggregation_strategy="first"` so words are not split into subword fragments such as `##R`.
+
+**3. Span post-processing.**
+- Entities split at a comma or conjunction are merged, so matching sees the full phrase. This stopped *"conception"* matching ESCO's *"pregnancy"* skill. Short list items such as *Python and SQL* stay separate.
+- Stray leading and trailing punctuation or conjunctions are stripped.
+- Filler-only spans (*"Ensures"*, *"maintains"*) are dropped. This matches on surface text, not `lemma_`, because spaCy does not lemmatize mistagged proper nouns.
+- Spans must contain a noun or a recognized soft-skill verb, so verb-led skills such as *"Led"* or *"Audited"* are kept.
+
+**4. ESCO normalization.** Every ESCO preferred and alternative label is embedded once with Sentence-BERT and cached. Each extracted span is matched to its nearest ESCO term by cosine similarity. Spans scoring below the threshold (default 0.6) stay unmatched instead of being forced onto a wrong concept.
+
+**5. Skill-gap comparison.** Both a candidate's and a job's skills are expressed as ESCO concepts, so the gap is the set of required concepts the candidate lacks, with similarity-weighted credit for partial overlaps. This stage is in progress.
+
+### Datasets
+
+- [LinkedIn Job Postings](https://www.kaggle.com/datasets/arshkon/linkedin-job-postings) (Kaggle)
+- [Resume Dataset](https://www.kaggle.com/datasets/snehaanbhawal/resume-dataset) (Kaggle)
+- [ESCO](https://esco.ec.europa.eu/en/use-esco/download) classification, English, CSV
+
+### Results so far
+
+| Dataset | Sample | Spans matched to ESCO |
+|---|---|---|
+| Job postings | 200 postings | ~84–85% |
+| Resumes | 2,484 resumes | _to be recorded after the full run_ |
 
 ---
 
 ## How the App Works
-
-The user journey is designed to be straightforward:
 
 1. The user signs in.
 2. They choose a resume file to upload.
@@ -107,62 +136,20 @@ The user journey is designed to be straightforward:
 6. The backend processes the resume and creates a skill analysis record.
 7. Skill gap rows are generated for missing or weak skills.
 8. Overall readiness is calculated.
-9. The app shows a skill-analysis report to the user.
-10. The user can view recommendations and monitor progress.
+9. The app shows a skill-analysis report.
+10. The user views recommendations and monitors progress.
 
-This creates a complete cycle from input (resume) to insight (skill readiness) to action (learning plan).
-
----
-
-## Data Model (Conceptual)
-
-The project is built around a few core entities:
-
-- User: authenticated individual using the app
-- Resume: uploaded document associated with a user
-- SkillAnalysis: evaluation of a resume for a role or target profile
-- SkillGap: specific gap identified in the analysis
-- Course: learning resource user tracks or follows
-
-These entities form the foundation for the resume-to-readiness pipeline.
+This gives a complete cycle from input (resume) to insight (readiness) to action (learning plan).
 
 ---
 
-## Technical Architecture
+## Data Model
 
-### Client-side
-The mobile app uses:
-
-- Expo for app packaging and runtime
-- React Native for the UI layer
-- TypeScript for type safety and maintainability
-- Expo Router for screen navigation
-- Context-based state management for analysis data
-
-### Server-side / Backend
-The backend processing layer uses:
-
-- Supabase database
-- Supabase storage
-- Supabase Edge Functions with Deno
-
-This combination provides a low-friction approach for building a full-stack prototype without needing a large custom backend from the start.
-
----
-
-
-
-## Current Implementation Status
-
-This project is structured as a functional prototype. Some parts of the system are mocked or placeholder-driven while the full AI-powered parsing pipeline is still being developed. The codebase already establishes the application flow and data model needed to support a real analysis engine in future iterations.
-
-The main value of the current version is that it demonstrates the full product workflow:
-
-- upload resume
-- process data
-- calculate readiness
-- show skill gaps
-- improve recommendations and tracking
+- **User:** authenticated individual using the app
+- **Resume:** uploaded document associated with a user
+- **SkillAnalysis:** evaluation of a resume for a role or target profile
+- **SkillGap:** a specific gap identified in an analysis
+- **Course:** learning resource the user tracks or follows
 
 ---
 
@@ -170,74 +157,54 @@ The main value of the current version is that it demonstrates the full product w
 
 ```text
 SkillXray/
-├── app/                            # app routes and UI screens
+├── app/                        # app routes and UI screens
 ├── src/
-│   ├── components/                 # shared UI building blocks
-│   ├── features/                   # resume, analysis, course, and recommendation modules
-│   ├── services/                   # API and backend integration logic
-│   ├── state/                     # app-level state and context
-│   ├── types/                     # TypeScript interfaces and models
-│   ├── lib/                       # config and shared services
-│   └── ...
+│   ├── components/             # shared UI building blocks
+│   ├── features/               # resume, analysis, course, recommendation modules
+│   ├── services/               # API and backend integration logic
+│   ├── state/                  # app-level state and context
+│   ├── types/                  # TypeScript interfaces and models
+│   └── lib/                    # config and shared services
 ├── supabase/
 │   └── functions/
-│       └── parse-resume/           # Deno edge function for resume processing
-├── android/                        # Android native project
-├── assets/                         # static assets
-├── app.json                        # Expo configuration
-├── babel.config.js                 # Babel config
-├── package.json                    # project scripts and dependencies
-├── tsconfig.json                   # TypeScript config
-├── README.md                       # project documentation
-├── .env.example                    # example environment variables
-└── .gitignore
+│       └── parse-resume/       # Deno edge function for resume processing
+├── ml/
+│   └── SkillXray_ML_Pipeline.ipynb   # skill extraction + ESCO normalization (Colab)
+├── android/                    # Android native project
+├── assets/                     # static assets
+├── app.json                    # Expo configuration
+├── package.json                # scripts and dependencies
+├── tsconfig.json               # TypeScript config
+└── .env.example                # example environment variables
 ```
 
 ---
 
 ## Development Setup
 
-### Prerequisites
+### Mobile app
 
-- Node.js
-- npm
-- Expo CLI
-- Supabase project
-- Deno (for edge function development)
-
-### Install dependencies
+Prerequisites: Node.js, npm, Expo CLI, a Supabase project, and Deno (for edge function development).
 
 ```bash
 npm install
-```
-
-### Run the app
-
-```bash
-npm start
-```
-
-Then choose an emulator, simulator, or physical device connection.
-
-### Run Android
-
-```bash
+npm start          # then choose an emulator, simulator, or physical device
 npm run android
-```
-
-### Run iOS
-
-```bash
 npm run ios
 ```
+
+### ML pipeline
+
+1. Open `ml/SkillXray_ML_Pipeline.ipynb` in Google Colab.
+2. Set **Runtime → Change runtime type → GPU**.
+3. Place the datasets under `MyDrive/SkillXray/data/` (`raw/postings.csv`, `raw/Resume.csv`, and the ESCO CSVs in `esco/`).
+4. Run the install cells, **restart the session once**, then continue from the import check without re-running the installs.
 
 ---
 
 ## Environment Configuration
 
-Create a `.env` file based on the project requirements and ensure all Supabase environment values are provided.
-
-Example:
+Create a `.env` file from `.env.example` and provide your Supabase values:
 
 ```bash
 SUPABASE_URL=your_project_url
@@ -245,31 +212,53 @@ SUPABASE_ANON_KEY=your_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 ```
 
-These values are required for authentication, database access, storage, and edge function communications.
+These are required for authentication, database access, storage, and edge function communication. The service role key bypasses row-level security: keep it server-side (edge functions only), never in the mobile app, and never commit `.env`.
 
 ---
 
-## Future Work
+## Current Implementation Status
 
-This project has clear extension points for future development:
+The project is a functional prototype.
 
-- improve resume parsing with NLP or LLM-based extraction
-- connect to a job-role skill database such as ESCO or a curated taxonomy
-- add smarter recommendation ranking based on user profile and job role
-- introduce user dashboards for skill progression
-- add a stronger AI recommendation engine to compare resumes to role requirements
-- expand the role and course model for personalized pathways
+- **Done:** authentication, resume upload to Supabase Storage, resume records, analysis and skill-gap data model, readiness display, and the ML pipeline for skill extraction and ESCO normalization (validated on a job-posting sample).
+- **In progress:** connecting the ML pipeline to the `parse-resume` edge function. Parts of the analysis shown in the app are still mocked or placeholder-driven until that integration is complete. Because Deno edge functions cannot run PyTorch models directly, the planned approach is to host the pipeline as a separate inference service that the edge function calls.
+- **Planned:** the skill-gap comparison, Career Readiness Index, and recommendation ranking.
+
+---
+
+## Known Limitations
+
+- **ESCO coverage.** ESCO is a general labour-market taxonomy, so highly specific technical terms (for example power-systems engineering jargon) often have no close match and stay unmatched. O*NET's Technology Skills data, linked through the official ESCO–O*NET crosswalk, is a possible extension.
+- **Domain shift.** JobBERT was trained on job-posting language, while resumes are phrased differently, so resume extraction needs manual spot-checking.
+- **Source data quality.** The scraped datasets contain formatting artifacts that cleaning cannot fully recover.
+- **Span granularity.** JobBERT tags full competency clauses as skills, not only keywords, so some extracted spans are long phrases.
+
+---
+
+## Roadmap
+
+- [x] Mobile app: authentication, resume upload, analysis and course screens
+- [x] Supabase data model and storage
+- [x] ML pipeline: text cleaning, JobBERT extraction, ESCO normalization
+- [ ] Integrate the ML pipeline with the `parse-resume` edge function
+- [ ] Skill-gap comparison (candidate vs. target role, in ESCO-concept space)
+- [ ] Career Readiness Index
+- [ ] Learning-resource recommendation ranking
+- [ ] Evaluation: precision/recall/F1 for extraction, NDCG and MAP for recommendations
+- [ ] User dashboards for skill progression
 
 ---
 
 ## Conclusion
 
-SkillXray is a practical final-year project that combines mobile application development, cloud services, and career guidance into a single product concept. It demonstrates how a software system can take raw resume content, transform it into meaningful skill insight, and provide the user with a more confident path toward employment readiness.
-
-The project is valuable not only as a software engineering exercise, but also as a proof of concept for a broader idea: personalized skill intelligence for career development.
+SkillXray combines mobile development, cloud services, and NLP into a single career-guidance product. It takes raw resume content, turns it into structured skill insight, and gives users a clearer path toward employment readiness. Beyond the software engineering exercise, it is a proof of concept for personalized skill intelligence.
 
 ---
 
 ## License
 
-This project is intended for academic and portfolio use unless otherwise stated by the project owner.
+Intended for academic and portfolio use unless otherwise stated by the project owner.
+
+## Author
+
+_Your name · Admission number · Supervisor_
