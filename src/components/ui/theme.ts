@@ -1,52 +1,53 @@
-// Shared design tokens supporting both Light and Dark themes
+
+ // Shared design tokens for a professional resume analyzer
 
 export const colors = {
   light: {
-    background: "#F2FFD9",
+    background: "#F4F7FB",
     surface: "#FFFFFF",
-    surfaceMuted: "#F0F4E8",
-    border: "#DCE5D2",
+    surfaceMuted: "#EDF2F8",
+    border: "#DCE4EE",
 
-    textPrimary: "#071412",
-    textSecondary: "#5F6B67",
-    textMuted: "#8A9691",
+    textPrimary: "#172B4D",
+    textSecondary: "#59697D",
+    textMuted: "#8996A7",
 
-    accent: "#18D8D0",
-    accentSoft: "#D9FFFA",
+    accent: "#5279AD",
+    accentSoft: "#E3ECF8",
 
-    // Button gradient
-    buttonGradient: ["#D9FFB8", "#18D8D0"] as const,
+    // Subtle navy-to-steel-blue gradient
+    buttonGradient: ["#304F7C", "#5279AD"] as const,
 
-    progressTrack: "#DCE5D2",
-    progressFill: "#18D8D0",
+    progressTrack: "#DFE7F1",
+    progressFill: "#5279AD",
 
-    severityHigh: "#EF4444",
-    severityMedium: "#F59E0B",
-    severityLow: "#18B981",
+    severityHigh: "#C75C5C",
+    severityMedium: "#C28A43",
+    severityLow: "#4E896B",
   },
 
   dark: {
-    background: "#020B09",
-    surface: "#06110F",
-    surfaceMuted: "#0B1916",
-    border: "#172722",
+    background: "#0D1522",
+    surface: "#141F30",
+    surfaceMuted: "#1C2A3E",
+    border: "#2A3A50",
 
-    textPrimary: "#F8FAF9",
-    textSecondary: "#A7B5B1",
-    textMuted: "#6F7D79",
+    textPrimary: "#F1F5FA",
+    textSecondary: "#B1BED0",
+    textMuted: "#7F8DA2",
 
-    accent: "#18D8D0",
-    accentSoft: "#063B37",
+    accent: "#83A9DB",
+    accentSoft: "#213652",
 
-    // Mint → cyan gradient from the screenshot
-    buttonGradient: ["#D9FFB8", "#18D8D0"] as const,
+    // Muted blue gradient
+    buttonGradient: ["#5279AD", "#3F6597"] as const,
 
-    progressTrack: "#172722",
-    progressFill: "#18D8D0",
+    progressTrack: "#2A3A50",
+    progressFill: "#83A9DB",
 
-    severityHigh: "#EF4444",
-    severityMedium: "#F59E0B",
-    severityLow: "#18B981",
+    severityHigh: "#E47C7C",
+    severityMedium: "#D8AA68",
+    severityLow: "#7FB896",
   },
 };
 

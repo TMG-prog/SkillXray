@@ -17,13 +17,15 @@ export interface Analysis {
   readiness: number; // 0-100
   gaps: SkillGap[];
 }
+type NewCourse = Omit<TrackedCourse, "id" | "profileId" | "enrolledAt" | "status"> & {
+  status?: TrackedCourseStatus;
+};
 
 interface AppDataContextValue {
   analysis: Analysis | null;
   completeResumeUpload: (analysis: Analysis) => void;
   courses: TrackedCourse[];
-  addCourse: (course: Omit<TrackedCourse, "id" | "profileId" | "enrolledAt" | "status">) => void;
-  updateCourseStatus: (id: string, status: TrackedCourseStatus) => void;
+  addCourse: (course: NewCourse) => void;  updateCourseStatus: (id: string, status: TrackedCourseStatus) => void;
   deleteCourse: (id: string) => void;
 }
 
@@ -48,18 +50,24 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setAnalysis(analysis);
   }
 
-  function addCourse(course: Omit<TrackedCourse, "id" | "profileId" | "enrolledAt" | "status">) {
-    setCourses((prev) => [
-      ...prev,
-      {
-        ...course,
-        id: String(Date.now()),
-        profileId: "me",
-        status: "not_started",
-        enrolledAt: new Date().toISOString().slice(0, 10),
-      },
-    ]);
-  }
+ function addCourse(course: NewCourse) {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const today = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+  setCourses((prev) => [
+    ...prev,
+    {
+      ...course,
+      id: String(Date.now()),
+      profileId: "me",
+      status: course.status ?? "not_started",
+      enrolledAt: today,
+    },
+  ]);
+}
+   
+  
 
   function updateCourseStatus(id: string, status: TrackedCourseStatus) {
     setCourses((prev) => prev.map((c) => (c.id === id ? { ...c, status } : c)));
