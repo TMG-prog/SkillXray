@@ -7,13 +7,13 @@ from transformers import AutoTokenizer, AutoModelForTokenClassification
 app = FastAPI(title="SkillXray Extraction API")
 security = HTTPBearer()
 
-MODEL_DIR = os.getenv("MODEL_PATH", "./models/jobbert_finetuned_knowledge")
+# Set your Hugging Face repository ID here (e.g., "your-hf-username/your-model-repo-name")
+MODEL_REPO = os.getenv("MODEL_REPO", "Tracymgprog/skillxray_skillextraction")
 MODEL_API_KEY = os.getenv("MODEL_API_KEY", "")
 
-print("Loading fine-tuned model and tokenizer...")
-tokenizer = AutoTokenizer.from_pretrained('jjzha/jobbert_knowledge_extraction')
-model_path_or_repo = MODEL_DIR if os.path.exists(MODEL_DIR) else "jjzha/jobbert_knowledge_extraction"
-model = AutoModelForTokenClassification.from_pretrained(model_path_or_repo)
+print(f"Loading fine-tuned model and tokenizer from Hugging Face Hub: {MODEL_REPO}...")
+tokenizer = AutoTokenizer.from_pretrained(MODEL_REPO)
+model = AutoModelForTokenClassification.from_pretrained(MODEL_REPO)
 model.eval()
 
 if torch.cuda.is_available():
@@ -28,7 +28,6 @@ async def extract_skills(payload: dict, credentials: HTTPAuthorizationCredential
     if not text:
         raise HTTPException(status_code=400, detail="Text field is required.")
 
-    # Tokenize with offset mapping for exact character span recovery
     inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=160, return_offsets_mapping=True)
     offset_mapping = inputs.pop("offset_mapping")[0]
     
@@ -54,7 +53,6 @@ async def extract_skills(payload: dict, credentials: HTTPAuthorizationCredential
 
     unique_skills = list(dict.fromkeys(extracted_skills))
 
-    # Return pure list of skills extracted by JobBERT
     return {
         "skills": unique_skills,
         "count": len(unique_skills)
