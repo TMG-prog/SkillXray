@@ -7,7 +7,7 @@ from transformers import AutoTokenizer, AutoModelForTokenClassification
 app = FastAPI(title="SkillXray Extraction API")
 security = HTTPBearer()
 
-# Set your Hugging Face repository ID here (e.g., "your-hf-username/your-model-repo-name")
+# Ensure this matches your exact Hugging Face repository name (case-sensitive)
 MODEL_REPO = os.getenv("MODEL_REPO", "Tracymgprog/skillxray_skillextraction")
 MODEL_API_KEY = os.getenv("MODEL_API_KEY", "")
 
@@ -19,8 +19,8 @@ async def load_model_on_startup():
     global tokenizer, model
     print(f"Loading fine-tuned model and tokenizer from Hugging Face Hub: {MODEL_REPO}...")
     
-    # Loaded safely inside the startup event loop
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_REPO)
+    # use_fast=False prevents tokenizer conversion crashes
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_REPO, use_fast=False)
     model = AutoModelForTokenClassification.from_pretrained(MODEL_REPO)
     model.eval()
     
@@ -34,6 +34,9 @@ async def extract_skills(payload: dict, credentials: HTTPAuthorizationCredential
     if MODEL_API_KEY and credentials.credentials != MODEL_API_KEY:
         raise HTTPException(status_code=401, detail="Invalid authorization token.")
     
+    if not model or not tokenizer:
+        raise HTTPException(status_code=503, detail="Model is still initializing. Please try again in a moment.")
+
     text = payload.get("text", "")
     if not text:
         raise HTTPException(status_code=400, detail="Text field is required.")
