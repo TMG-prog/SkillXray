@@ -11,13 +11,23 @@ security = HTTPBearer()
 MODEL_REPO = os.getenv("MODEL_REPO", "Tracymgprog/skillxray_skillextraction")
 MODEL_API_KEY = os.getenv("MODEL_API_KEY", "")
 
-print(f"Loading fine-tuned model and tokenizer from Hugging Face Hub: {MODEL_REPO}...")
-tokenizer = AutoTokenizer.from_pretrained(MODEL_REPO)
-model = AutoModelForTokenClassification.from_pretrained(MODEL_REPO)
-model.eval()
+tokenizer = None
+model = None
 
-if torch.cuda.is_available():
-    model = model.cuda()
+@app.on_event("startup")
+async def load_model_on_startup():
+    global tokenizer, model
+    print(f"Loading fine-tuned model and tokenizer from Hugging Face Hub: {MODEL_REPO}...")
+    
+    # Loaded safely inside the startup event loop
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_REPO)
+    model = AutoModelForTokenClassification.from_pretrained(MODEL_REPO)
+    model.eval()
+    
+    if torch.cuda.is_available():
+        model = model.cuda()
+        
+    print("Model and tokenizer loaded successfully!")
 
 @app.post("/api/v1/extract-skills")
 async def extract_skills(payload: dict, credentials: HTTPAuthorizationCredentials = Security(security)):
