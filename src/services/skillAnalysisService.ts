@@ -1,11 +1,20 @@
 import { supabase } from "@/lib/supabase";
 import type { SkillAnalysis, SkillGap } from "@/types";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 
 export async function requestResumeParsing(resumeId: string, jobRoleId?: string) {
   const { data, error } = await supabase.functions.invoke("parse-resume", {
     body: { resume_id: resumeId, job_role_id: jobRoleId ?? null },
   });
-  if (error) throw error;
+
+  if (error) {
+    if (error instanceof FunctionsHttpError) {
+      const body = await error.context.json().catch(() => null);
+      console.error("[analyze] function failed", error.context.status, body);
+      throw new Error(body?.error ?? `Function failed with status ${error.context.status}`);
+    }
+    throw error;
+  }
   return data as { analysis_id: string };
 }
 
