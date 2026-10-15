@@ -20,7 +20,7 @@ async def load_model_on_startup():
     print(f"Loading fine-tuned model and tokenizer from Hugging Face Hub: {MODEL_REPO}...")
     
     # use_fast=False prevents tokenizer conversion crashes
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_REPO, use_fast=False)
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_REPO)
     model = AutoModelForTokenClassification.from_pretrained(MODEL_REPO)
     model.eval()
     
