@@ -2,6 +2,14 @@
 
 SkillXray is a mobile-first career readiness application that helps job seekers understand how close they are to meeting the requirements of their target roles. Users upload a resume, see which skills they already demonstrate, compare their profile against a target role, and get recommendations for the gaps they still need to close.
 
+## Current Progress
+
+- **Implemented:** Expo/React Native app structure, Supabase client integration, resume upload and parsing workflow, and a FastAPI skill-extraction service.
+- **Implemented:** Supabase `parse-resume` Edge Function parses PDF/DOCX files, calls the model service, and stores extracted skills.
+- **In progress:** ESCO normalization, role-to-resume skill-gap comparison, readiness scoring, and the complete recommendations workflow.
+- **Deployed:** The skill-extraction model API is hosted on [Hugging Face Spaces](https://huggingface.co/spaces/Tracymgprog/skillxray-api).
+- **Deployment verification pending:** The production Supabase function connection and complete app-to-model flow are not confirmed here; follow the checklist below to verify them.
+
 ---
 
 ## Problem Statement
@@ -51,8 +59,8 @@ This creates a gap between candidate capability and job-market demand. SkillXray
 └────────────┬─────────────┘
              │
 ┌────────────▼─────────────┐
-│  ML pipeline             │  Python · JobBERT · Sentence-BERT · ESCO
-│  (skill extraction)      │  (developed in Colab, integration in progress)
+│  Model API               │  Python · FastAPI · JobBERT
+│  (skill extraction)      │  (deployed on Hugging Face Spaces)
 └──────────────────────────┘
 ```
 
@@ -68,8 +76,8 @@ Resume processing runs through Deno-based Supabase Edge Functions, which receive
 ### Business Logic Layer
 Service modules handle uploading a resume, requesting analysis, polling for status, retrieving skill gaps, and storing readiness data in app state. They keep client-side logic separate from the UI.
 
-### ML Layer
-A Python pipeline extracts skills from text and maps them onto the ESCO taxonomy. It is described in full below.
+### Model Layer
+A Python FastAPI service extracts skills from resume text with the configured token-classification model. ESCO normalization and skill-gap comparison are still in progress; the current parsing workflow stores extracted skills but does not yet complete the full readiness analysis.
 
 ---
 
@@ -117,14 +125,7 @@ Raw text → Cleaning → JobBERT extraction → Span post-processing → ESCO n
 - [Resume Dataset](https://www.kaggle.com/datasets/snehaanbhawal/resume-dataset) (Kaggle)
 - [ESCO](https://esco.ec.europa.eu/en/use-esco/download) classification, English, CSV
 
-### Results so far
 
-| Dataset | Sample | Spans matched to ESCO |
-|---|---|---|
-| Job postings | 200 postings | ~84–85% |
-| Resumes | 2,484 resumes | _to be recorded after the full run_ |
-
----
 
 ## How the App Works
 
@@ -132,14 +133,11 @@ Raw text → Cleaning → JobBERT extraction → Span post-processing → ESCO n
 2. They choose a resume file to upload.
 3. The resume is saved to storage.
 4. A resume record is created in the database.
-5. The app triggers the analysis process.
-6. The backend processes the resume and creates a skill analysis record.
-7. Skill gap rows are generated for missing or weak skills.
-8. Overall readiness is calculated.
-9. The app shows a skill-analysis report.
-10. The user views recommendations and monitors progress.
+5. The app invokes the `parse-resume` Edge Function.
+6. The function extracts text from the PDF/DOCX, calls the model API, and saves extracted skills.
+7. ESCO normalization, skill-gap comparison, readiness scoring, and recommendations are the next implementation steps.
 
-This gives a complete cycle from input (resume) to insight (readiness) to action (learning plan).
+The current implemented flow reaches resume skill extraction and storage; it does not yet complete the readiness-to-learning-plan cycle.
 
 ---
 
@@ -166,16 +164,18 @@ SkillXray/
 │   ├── types/                  # TypeScript interfaces and models
 │   └── lib/                    # config and shared services
 ├── supabase/
+│   ├── config.toml             # Supabase local configuration
 │   └── functions/
-│       └── parse-resume/       # Deno edge function for resume processing
-├── ml/
-│   └── SkillXray_ML_Pipeline.ipynb   # skill extraction + ESCO normalization (Colab)
+│       └── parse-resume/       # Deno Edge Function for resume processing
+├── Backend/
+│   ├── main.py                 # FastAPI skill-extraction endpoint
+│   ├── Dockerfile              # container configuration (port 7860)
+│   └── models/                 # local model artifacts
 ├── android/                    # Android native project
 ├── assets/                     # static assets
 ├── app.json                    # Expo configuration
 ├── package.json                # scripts and dependencies
-├── tsconfig.json               # TypeScript config
-└── .env.example                # example environment variables
+└── tsconfig.json               # TypeScript config
 ```
 
 ---
@@ -184,7 +184,7 @@ SkillXray/
 
 ### Mobile app
 
-Prerequisites: Node.js, npm, Expo CLI, a Supabase project, and Deno (for edge function development).
+Prerequisites: Node.js, npm, a Supabase project, and Deno (for Edge Function development).
 
 ```bash
 npm install
@@ -193,30 +193,66 @@ npm run android
 npm run ios
 ```
 
-### ML pipeline
+### Model API
 
-1. Open `ml/SkillXray_ML_Pipeline.ipynb` in Google Colab.
-2. Set **Runtime → Change runtime type → GPU**.
-3. Place the datasets under `MyDrive/SkillXray/data/` (`raw/postings.csv`, `raw/Resume.csv`, and the ESCO CSVs in `esco/`).
-4. Run the install cells, **restart the session once**, then continue from the import check without re-running the installs.
+The Dockerfile in `Backend/` starts `main:app` on port `7860`. The service requires `SKILL_MODEL_ID` and `MODEL_API_KEY`; set `HF_TOKEN` only if the model repository is private. For local development, set these environment variables and run `uvicorn main:app --reload --port 7860` from `Backend/`.
 
 ---
 
 ## Environment Configuration
 
-Create a `.env` file from `.env.example` and provide your Supabase values:
+Configure the Expo app with its public Supabase project values:
 
 ```bash
-SUPABASE_URL=your_project_url
-SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+EXPO_PUBLIC_SUPABASE_URL=your_project_url
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 ```
 
-These are required for authentication, database access, storage, and edge function communication. The service role key bypasses row-level security: keep it server-side (edge functions only), never in the mobile app, and never commit `.env`.
+Put these in the project-root `.env` for local Expo development or in the mobile build environment. Never put a Supabase service-role key in the mobile app. The Edge Function uses its server-side Supabase credentials and the model API secrets described below.
 
----
+## Deployment Progress
 
+### 1. Model API deployment
 
----
+The skill-extraction API is deployed at [Tracymgprog/skillxray-api](https://huggingface.co/spaces/Tracymgprog/skillxray-api). Its API exposes `/health` and `/extract`. The checked-in Dockerfile is configured for this Hugging Face Space deployment. The Space secrets are:
+
+- `SKILL_MODEL_ID`: Hugging Face model ID or accessible model repository.
+- `MODEL_API_KEY`: a strong shared secret used to authorize requests from the Edge Function.
+- `HF_TOKEN`: only if needed to download a private model.
+
+The Space API base URL follows the Hugging Face format `https://tracymgprog-skillxray-api.hf.space`; the extraction endpoint configured in Supabase should be `https://tracymgprog-skillxray-api.hf.space/extract`. Check `https://tracymgprog-skillxray-api.hf.space/health` to verify the service reports `{"ok":true}`.
+
+You can build and smoke-test the container locally before publishing:
+
+```bash
+docker build -t skillxray-model ./Backend
+docker run --rm -p 7860:7860 -e SKILL_MODEL_ID=your-model-id -e MODEL_API_KEY=your-shared-secret skillxray-model
+```
+
+### 2. Connect the Supabase Edge Function
+
+From the project root, link the Supabase CLI to the intended project and set the function secrets. Use the URL of the deployed `/extract` endpoint:
+
+```bash
+supabase link --project-ref <project-ref>
+supabase secrets set MODEL_URL=https://tracymgprog-skillxray-api.hf.space/extract MODEL_API_KEY=<shared-secret>
+supabase functions deploy parse-resume
+```
+
+The `MODEL_API_KEY` value must match the model Space secret. `MOCK_SKILLS` can optionally be set as a comma-separated test override; remove it to call the real model. Do not commit secret values.
+
+### 3. Verify the end-to-end flow
+
+1. Confirm the model service health endpoint reports ready.
+2. Confirm the Supabase `parse-resume` function is deployed and has `MODEL_URL` and `MODEL_API_KEY` configured.
+3. Sign in to the app, upload a text-based PDF or DOCX resume, and run parsing.
+4. Confirm the function reports extracted skills and the skills are saved in Supabase.
+5. Record the deployed Space URL and confirm whether the end-to-end test passed.
+
+**Current deployment checkpoint:** the model API is deployed to Hugging Face Spaces. Confirm the Supabase function is configured with the Space URL and matching API key, then verify the full resume-upload-to-skill-storage flow.
+
+### 4. Publish the mobile app
+
+No EAS build configuration or app-store release details are checked in yet. Once the backend flow is verified, configure Expo EAS builds, provide the public Supabase environment values to the build, and complete the Android/iOS signing and store-submission steps. Add the build and store links here after release.
 
 
