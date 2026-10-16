@@ -8,7 +8,8 @@ SkillXray is a mobile-first career readiness application that helps job seekers 
 - **Implemented:** Supabase `parse-resume` Edge Function parses PDF/DOCX files, calls the model service, and stores extracted skills.
 - **In progress:** ESCO normalization, role-to-resume skill-gap comparison, readiness scoring, and the complete recommendations workflow.
 - **Deployed:** The skill-extraction model API is hosted on [Hugging Face Spaces](https://huggingface.co/spaces/Tracymgprog/skillxray-api).
-- **Deployment verification pending:** The production Supabase function connection and complete app-to-model flow are not confirmed here; follow the checklist below to verify them.
+- **Expo app deployment pending:** EAS build configuration and store release details are not present yet. The Android package ID is configured; an iOS bundle identifier still needs to be added.
+- **Backend verification pending:** The production Supabase function connection and complete app-to-model flow are not confirmed here.
 
 ---
 
@@ -210,49 +211,58 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 
 Put these in the project-root `.env` for local Expo development or in the mobile build environment. Never put a Supabase service-role key in the mobile app. The Edge Function uses its server-side Supabase credentials and the model API secrets described below.
 
-## Deployment Progress
+## Expo App Deployment
 
-### 1. Model API deployment
+The mobile app is built and distributed with Expo Application Services (EAS). EAS configuration and store release are not yet checked in.
 
-The skill-extraction API is deployed at [Tracymgprog/skillxray-api](https://huggingface.co/spaces/Tracymgprog/skillxray-api). Its API exposes `/health` and `/extract`. The checked-in Dockerfile is configured for this Hugging Face Space deployment. The Space secrets are:
+### 1. Configure the Expo project
 
-- `SKILL_MODEL_ID`: Hugging Face model ID or accessible model repository.
-- `MODEL_API_KEY`: a strong shared secret used to authorize requests from the Edge Function.
-- `HF_TOKEN`: only if needed to download a private model.
-
-The Space API base URL follows the Hugging Face format `https://tracymgprog-skillxray-api.hf.space`; the extraction endpoint configured in Supabase should be `https://tracymgprog-skillxray-api.hf.space/extract`. Check `https://tracymgprog-skillxray-api.hf.space/health` to verify the service reports `{"ok":true}`.
-
-You can build and smoke-test the container locally before publishing:
+Install dependencies, sign in to Expo, and initialize EAS from the project root:
 
 ```bash
-docker build -t skillxray-model ./Backend
-docker run --rm -p 7860:7860 -e SKILL_MODEL_ID=your-model-id -e MODEL_API_KEY=your-shared-secret skillxray-model
+npm install
+npx eas-cli@latest login
+npx eas-cli@latest build:configure
 ```
 
-### 2. Connect the Supabase Edge Function
+This creates `eas.json` and links the app to an Expo project. Keep the existing Android package ID `com.skillxray.mobile`. Before building for iOS, add a unique `ios.bundleIdentifier` to `app.json` (for example, a reverse-DNS identifier you control). Configure the `production` build profile in `eas.json` to use the EAS `production` environment.
 
-From the project root, link the Supabase CLI to the intended project and set the function secrets. Use the URL of the deployed `/extract` endpoint:
+### 2. Configure build environment variables
+
+The app reads these values from `process.env` when it is bundled:
+
+```env
+EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+For local development, put them in the project-root `.env` and restart Expo. For EAS builds, add both variables to the **production** environment in the Expo project's EAS environment-variable settings, then build using the production profile. These `EXPO_PUBLIC_` values are included in the client app and are not secrets. Never add the Supabase service-role key or model API key to the Expo app.
+
+The model API is deployed at [Tracymgprog/skillxray-api](https://huggingface.co/spaces/Tracymgprog/skillxray-api). Before release, confirm the Supabase `parse-resume` function is deployed with `MODEL_URL` set to `https://tracymgprog-skillxray-api.hf.space/extract` and `MODEL_API_KEY` matching the model Space secret. Keep those credentials in Supabase/server-side secrets only.
+
+### 3. Build and release
+
+Create installable production builds:
 
 ```bash
-supabase link --project-ref <project-ref>
-supabase secrets set MODEL_URL=https://tracymgprog-skillxray-api.hf.space/extract MODEL_API_KEY=<shared-secret>
-supabase functions deploy parse-resume
+npx eas-cli@latest build --platform android --profile production
+npx eas-cli@latest build --platform ios --profile production
 ```
 
-The `MODEL_API_KEY` value must match the model Space secret. `MOCK_SKILLS` can optionally be set as a comma-separated test override; remove it to call the real model. Do not commit secret values.
+EAS will guide you through signing credentials. Use an internal distribution profile first to test on devices. For store releases, configure the Google Play and Apple Developer accounts, then submit the completed builds:
 
-### 3. Verify the end-to-end flow
+```bash
+npx eas-cli@latest submit --platform android --profile production
+npx eas-cli@latest submit --platform ios --profile production
+```
 
-1. Confirm the model service health endpoint reports ready.
-2. Confirm the Supabase `parse-resume` function is deployed and has `MODEL_URL` and `MODEL_API_KEY` configured.
-3. Sign in to the app, upload a text-based PDF or DOCX resume, and run parsing.
-4. Confirm the function reports extracted skills and the skills are saved in Supabase.
-5. Record the deployed Space URL and confirm whether the end-to-end test passed.
+### 4. Verify deployment
 
-**Current deployment checkpoint:** the model API is deployed to Hugging Face Spaces. Confirm the Supabase function is configured with the Space URL and matching API key, then verify the full resume-upload-to-skill-storage flow.
+1. Confirm both production EAS builds include the Supabase URL and anon key.
+2. Install the build on a device and test sign-in, resume upload, and skill extraction.
+3. Confirm the Edge Function can reach the deployed model API and the extracted skills are saved in Supabase.
+4. Record the EAS build links and app-store links here after release.
 
-### 4. Publish the mobile app
-
-No EAS build configuration or app-store release details are checked in yet. Once the backend flow is verified, configure Expo EAS builds, provide the public Supabase environment values to the build, and complete the Android/iOS signing and store-submission steps. Add the build and store links here after release.
+**Current deployment checkpoint:** the model API is deployed; the Expo app still needs EAS configuration, production environment variables, device testing, and store release. The production Supabase function connection also needs verification.
 
 
