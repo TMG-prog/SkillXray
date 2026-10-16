@@ -8,7 +8,7 @@ SkillXray is a mobile-first career readiness application that helps job seekers 
 - **Implemented:** Supabase `parse-resume` Edge Function parses PDF/DOCX files, calls the model service, and stores extracted skills.
 - **In progress:** ESCO normalization, role-to-resume skill-gap comparison, readiness scoring, and the complete recommendations workflow.
 - **Deployed:** The skill-extraction model API is hosted on [Hugging Face Spaces](https://huggingface.co/spaces/Tracymgprog/skillxray-api).
-- **Expo app deployment pending:** EAS build configuration and store release details are not present yet. The Android package ID is configured; an iOS bundle identifier still needs to be added.
+- **Expo Go setup:** The README now documents how to run the app on a device with Expo Go. A standalone app-store release is not configured yet.
 - **Backend verification pending:** The production Supabase function connection and complete app-to-model flow are not confirmed here.
 
 ---
@@ -185,14 +185,7 @@ SkillXray/
 
 ### Mobile app
 
-Prerequisites: Node.js, npm, a Supabase project, and Deno (for Edge Function development).
-
-```bash
-npm install
-npm start          # then choose an emulator, simulator, or physical device
-npm run android
-npm run ios
-```
+Run the app on a phone using Expo Go by following the [Expo Go setup](#run-the-app-with-expo-go) below. Deno is only needed if you are developing the Supabase Edge Function locally.
 
 ### Model API
 
@@ -209,60 +202,24 @@ EXPO_PUBLIC_SUPABASE_URL=your_project_url
 EXPO_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 ```
 
-Put these in the project-root `.env` for local Expo development or in the mobile build environment. Never put a Supabase service-role key in the mobile app. The Edge Function uses its server-side Supabase credentials and the model API secrets described below.
+Put these in the project-root `.env` for local Expo development. The `EXPO_PUBLIC_` values are bundled into the app and are not secrets. Never put a Supabase service-role key or model API key in the mobile app.
 
-## Expo App Deployment
+## Run the App with Expo Go
 
-The mobile app is built and distributed with Expo Application Services (EAS). EAS configuration and store release are not yet checked in.
+This starts the development version of SkillXray on a physical phone; it does not publish the app to an app store.
 
-### 1. Configure the Expo project
+1. Install [Expo Go](https://expo.dev/go) on your Android or iPhone.
+2. Create the project-root `.env` file with the Supabase URL and anon key shown above.
+3. In a terminal at the project root, install dependencies and start Expo:
 
-Install dependencies, sign in to Expo, and initialize EAS from the project root:
+    ```bash
+    npm install
+    npx expo start
+    ```
 
-```bash
-npm install
-npx eas-cli@latest login
-npx eas-cli@latest build:configure
-```
+4. Connect your phone and computer to the same Wi-Fi network. Open Expo Go on Android and scan the QR code shown in the terminal or browser. On iPhone, scan the QR code with the Camera app and open it in Expo Go.
+5. To connect when the phone and computer cannot reach each other over the local network, stop the server and run `npx expo start --tunnel`, then scan the new QR code.
 
-This creates `eas.json` and links the app to an Expo project. Keep the existing Android package ID `com.skillxray.mobile`. Before building for iOS, add a unique `ios.bundleIdentifier` to `app.json` (for example, a reverse-DNS identifier you control). Configure the `production` build profile in `eas.json` to use the EAS `production` environment.
-
-### 2. Configure build environment variables
-
-The app reads these values from `process.env` when it is bundled:
-
-```env
-EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-```
-
-For local development, put them in the project-root `.env` and restart Expo. For EAS builds, add both variables to the **production** environment in the Expo project's EAS environment-variable settings, then build using the production profile. These `EXPO_PUBLIC_` values are included in the client app and are not secrets. Never add the Supabase service-role key or model API key to the Expo app.
-
-The model API is deployed at [Tracymgprog/skillxray-api](https://huggingface.co/spaces/Tracymgprog/skillxray-api). Before release, confirm the Supabase `parse-resume` function is deployed with `MODEL_URL` set to `https://tracymgprog-skillxray-api.hf.space/extract` and `MODEL_API_KEY` matching the model Space secret. Keep those credentials in Supabase/server-side secrets only.
-
-### 3. Build and release
-
-Create installable production builds:
-
-```bash
-npx eas-cli@latest build --platform android --profile production
-npx eas-cli@latest build --platform ios --profile production
-```
-
-EAS will guide you through signing credentials. Use an internal distribution profile first to test on devices. For store releases, configure the Google Play and Apple Developer accounts, then submit the completed builds:
-
-```bash
-npx eas-cli@latest submit --platform android --profile production
-npx eas-cli@latest submit --platform ios --profile production
-```
-
-### 4. Verify deployment
-
-1. Confirm both production EAS builds include the Supabase URL and anon key.
-2. Install the build on a device and test sign-in, resume upload, and skill extraction.
-3. Confirm the Edge Function can reach the deployed model API and the extracted skills are saved in Supabase.
-4. Record the EAS build links and app-store links here after release.
-
-**Current deployment checkpoint:** the model API is deployed; the Expo app still needs EAS configuration, production environment variables, device testing, and store release. The production Supabase function connection also needs verification.
+For resume skill extraction to work, the Supabase `parse-resume` Edge Function must also be deployed and configured to call the [deployed model API](https://huggingface.co/spaces/Tracymgprog/skillxray-api). Keep `MODEL_URL` and `MODEL_API_KEY` in Supabase function secrets, not in the Expo app.
 
 
