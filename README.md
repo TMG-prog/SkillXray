@@ -4,18 +4,6 @@ SkillXray is a mobile-first career readiness application that helps job seekers 
 
 ---
 
-## Problem Statement
-
-Many job seekers do not know which of their skills are actually relevant to the roles they are applying for. They often:
-
-- submit applications without understanding how their experience maps to job requirements
-- struggle to identify missing skills
-- do not know what to study next
-- lose motivation because they cannot see progress clearly
-
-This creates a gap between candidate capability and job-market demand. SkillXray reduces that uncertainty by turning resume content into a structured readiness view.
-
----
 
 
 ## Core Features
