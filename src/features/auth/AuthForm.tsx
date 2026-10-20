@@ -1,22 +1,19 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, TextInput, TouchableOpacity, View, Alert, Platform } from 'react-native';
+import { StyleSheet, Text, TextInput, TouchableOpacity, View, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
-import * as AppleAuthentication from 'expo-apple-authentication';
 import { makeRedirectUri } from 'expo-auth-session';
 import { supabase } from '../../lib/supabase'; // Adjust path to your supabase client
+import { brand } from '../../components/ui/theme';
 
 WebBrowser.maybeCompleteAuthSession();
 
 export const theme = {
-  bg: '#0B1E1D',
-  cyan: '#06D6A0',
-  mint: '#1B9AAA',
-  text: '#FFFFFF',
-  subText: '#8A9A99',
-  border: '#1E3A38',
-  card: '#122625',
-};
+  ...brand,
+  card: brand.surface,
+  subText: brand.muted,
+} as const;
+
 
 export default function AuthForm() {
   const [isLogin, setIsLogin] = useState(true);
@@ -51,7 +48,7 @@ export default function AuthForm() {
   // Google Auth Handler
   const handleGoogleAuth = async () => {
     try {
-      const redirectTo = makeRedirectUri({ scheme: 'your-app-scheme' }); // e.g., 'myapp://'
+      const redirectTo = makeRedirectUri({ scheme: 'skillxray' }); 
 
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -79,30 +76,6 @@ export default function AuthForm() {
       }
     } catch (error: any) {
       Alert.alert('Google Sign-In Error', error.message);
-    }
-  };
-
-  // Apple Auth Handler
-  const handleAppleAuth = async () => {
-    try {
-      const credential = await AppleAuthentication.signInAsync({
-        requestedScopes: [
-          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-          AppleAuthentication.AppleAuthenticationScope.EMAIL,
-        ],
-      });
-
-      if (credential.identityToken) {
-        const { error } = await supabase.auth.signInWithIdToken({
-          provider: 'apple',
-          token: credential.identityToken,
-        });
-        if (error) throw error;
-      }
-    } catch (e: any) {
-      if (e.code !== 'ERR_REQUEST_CANCELED') {
-        Alert.alert('Apple Sign-In Error', e.message);
-      }
     }
   };
 
@@ -155,14 +128,6 @@ export default function AuthForm() {
           <Ionicons name="logo-google" size={18} color={theme.text} style={styles.icon} />
           <Text style={styles.socialButtonText}>Google</Text>
         </TouchableOpacity>
-
-        {/* Apple Sign-In button is hidden on non-iOS platforms or handled gracefully */}
-        {Platform.OS === 'ios' && (
-          <TouchableOpacity style={styles.socialButton} onPress={handleAppleAuth} activeOpacity={0.8}>
-            <Ionicons name="logo-apple" size={18} color={theme.text} style={styles.icon} />
-            <Text style={styles.socialButtonText}>Apple</Text>
-          </TouchableOpacity>
-        )}
       </View>
 
       <TouchableOpacity onPress={() => setIsLogin(!isLogin)} style={styles.switchContainer}>
@@ -199,7 +164,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 24,
   },
-  primaryButtonText: { color: '#0B1E1D', fontSize: 16, fontWeight: '700' },
+  primaryButtonText: { color: theme.onGradient, fontSize: 16, fontWeight: '700' },
   dividerContainer: { flexDirection: 'row', alignItems: 'center', width: '100%', marginBottom: 20 },
   line: { flex: 1, height: 1, backgroundColor: theme.border },
   orText: { color: theme.subText, paddingHorizontal: 12, fontSize: 12 },

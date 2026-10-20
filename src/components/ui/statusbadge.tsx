@@ -1,11 +1,11 @@
 import { View, Text, StyleSheet } from "react-native";
-import { brand } from "./brand";
+import { brand } from "./theme";
 import type { TrackedCourseStatus } from "@/types";
 
 const CONFIG: Record<TrackedCourseStatus, { label: string; color: string }> = {
   not_started: { label: "Not started", color: brand.muted },
-  in_progress: { label: "In progress", color: "#25D9D0" },
-  completed: { label: "Completed", color: "#34D399" },
+  in_progress: { label: "In progress", color: brand.cyan },
+  completed: { label: "Completed", color: brand.mint },
 };
 
 export function StatusBadge({ status }: { status: TrackedCourseStatus }) {

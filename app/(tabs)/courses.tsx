@@ -2,13 +2,13 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { RecommendationList } from "@/features/recommendations/RecommendationList";
-import { brand, SERIF } from "@/components/ui/brand";
+import { brand, SERIF } from "@/components/ui/theme";
 
 export default function RecommendationsScreen() {
   return (
     <View style={styles.root}>
       <LinearGradient
-        colors={["rgba(37,217,208,0.22)", "rgba(37,217,208,0)"]}
+        colors={[brand.tint, "transparent"]}
         style={styles.glow}
         pointerEvents="none"
       />

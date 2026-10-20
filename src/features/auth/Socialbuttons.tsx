@@ -7,7 +7,8 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import AuthForm, { theme } from "./AuthForm";
+import AuthForm from "./AuthForm";
+import { brand, colors } from "../../components/ui/theme";
 
 const DOME = 700;
 
@@ -18,7 +19,7 @@ export default function LoginScreen() {
     <View style={styles.root}>
       {/* Glow: a gradient band at the bottom, mostly covered by a dark dome so only the rim shows */}
       <LinearGradient
-        colors={["transparent", "#0C6F68", theme.cyan, theme.mint]}
+        colors={["transparent", colors.dark.accentSoft, brand.cyan, brand.mint]}
         locations={[0, 0.35, 0.7, 1]}
         style={[styles.glow, { top: height * 0.55 }]}
         pointerEvents="none"
@@ -47,7 +48,7 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.bg, overflow: "hidden" },
+  root: { flex: 1, backgroundColor: brand.bg, overflow: "hidden" },
   fill: { flex: 1 },
   glow: { position: "absolute", left: 0, right: 0, bottom: 0 },
   dome: {
@@ -55,7 +56,7 @@ const styles = StyleSheet.create({
     width: DOME,
     height: DOME,
     borderRadius: DOME / 2,
-    backgroundColor: theme.bg,
+    backgroundColor: brand.bg,
   },
   content: { flexGrow: 1, alignItems: "center", justifyContent: "center", padding: 20 },
 });

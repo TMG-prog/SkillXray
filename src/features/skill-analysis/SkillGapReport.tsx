@@ -3,7 +3,7 @@ import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import Svg, { Circle } from "react-native-svg";
 import { useAppData } from "@/state/appdatacontext";
-import { brand, SERIF } from "@/components/ui/brand";
+import { brand, SERIF } from "@/components/ui/theme";
 
 const ACCENT = "#25D9D0";
 const ACCENT_DARK = "#06201F";

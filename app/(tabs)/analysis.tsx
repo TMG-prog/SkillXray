@@ -5,14 +5,14 @@ import Svg, { Circle, Defs, LinearGradient as SvgGradient, Stop } from "react-na
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useAppData } from "@/state/appdatacontext";
-import { brand, SERIF } from "@/components/ui/brand";
+import { brand, colors, SERIF } from "@/components/ui/theme";
 
 type Severity = "high" | "medium" | "low";
 
 const SEVERITY: Record<Severity, { label: string; color: string }> = {
-  high: { label: "High", color: "#FF8F86" },
-  medium: { label: "Medium", color: "#F2C879" },
-  low: { label: "Low", color: brand.mint },
+  high: { label: "High", color: colors.dark.severityHigh },
+  medium: { label: "Medium", color: colors.dark.severityMedium },
+  low: { label: "Low", color: colors.dark.severityLow },
 };
 
 const RING = 124;
@@ -28,7 +28,7 @@ export default function AnalysisScreen() {
     return (
       <View style={styles.root}>
         <LinearGradient
-          colors={["rgba(37,217,208,0.22)", "rgba(37,217,208,0)"]}
+          colors={[brand.tint, "transparent"]}
           style={styles.glow}
           pointerEvents="none"
         />
@@ -70,7 +70,7 @@ export default function AnalysisScreen() {
   return (
     <View style={styles.root}>
       <LinearGradient
-        colors={["rgba(37,217,208,0.22)", "rgba(37,217,208,0)"]}
+        colors={[brand.tint, "transparent"]}
         style={styles.glow}
         pointerEvents="none"
       />
@@ -80,7 +80,7 @@ export default function AnalysisScreen() {
           <Text style={styles.screenTitle}>Skill gap analysis</Text>
 
           <LinearGradient
-            colors={["rgba(37,217,208,0.75)", "rgba(198,243,168,0.25)"]}
+            colors={[brand.cyan, brand.mint]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.scoreBorder}
@@ -102,7 +102,7 @@ export default function AnalysisScreen() {
                     cx={RING / 2}
                     cy={RING / 2}
                     r={RADIUS}
-                    stroke="rgba(255,255,255,0.08)"
+                    stroke={brand.border}
                     strokeWidth={STROKE}
                     fill="none"
                   />
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
   badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
   badgeText: { fontSize: 13, fontWeight: "700" },
 
-  track: { height: 6, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.08)", overflow: "hidden" },
+  track: { height: 6, borderRadius: 3, backgroundColor: brand.border, overflow: "hidden" },
   fill: { height: 6, borderRadius: 3 },
   scoreLabel: { fontSize: 13, color: brand.muted, marginTop: 8 },
 
@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: "rgba(37,217,208,0.12)",
+    backgroundColor: brand.tint,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 20,

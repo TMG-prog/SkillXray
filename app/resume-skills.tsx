@@ -4,7 +4,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { getResumeSkillNames } from "@/services/skillAnalysisService";
-import { brand, SERIF } from "@/components/ui/brand";
+import { brand, SERIF } from "@/components/ui/theme";
 
 const AMBER = "#F2C879";
 

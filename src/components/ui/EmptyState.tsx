@@ -1,6 +1,6 @@
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { brand, SERIF } from "./brand";
+import { brand, SERIF } from "./theme";
 
 interface Props {
   icon: keyof typeof Feather.glyphMap;

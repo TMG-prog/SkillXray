@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import { brand, SERIF } from "@/components/ui/brand";
+import { brand, colors, SERIF } from "@/components/ui/theme";
 import { MonthCalendar } from "@/components/ui/calendar";
 import { useAppData } from "@/state/appdatacontext";
 import type { TrackedCourse } from "@/types";
@@ -188,9 +188,9 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 15, lineHeight: 21, color: brand.muted, marginTop: 8, marginBottom: 12 },
   label: { fontSize: 13, fontWeight: "600", color: brand.muted, marginTop: 16, marginBottom: 6 },
   input: {
-    backgroundColor: "rgba(255,255,255,0.06)",
+    backgroundColor: brand.surfaceSolid,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
+    borderColor: brand.border,
     borderRadius: 12,
     color: brand.text,
     fontSize: 16,
@@ -201,28 +201,28 @@ const styles = StyleSheet.create({
   chip: {
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.15)",
+    borderColor: brand.border,
     paddingVertical: 8,
     paddingHorizontal: 14,
   },
-  chipActive: { backgroundColor: "#25D9D0", borderColor: "#25D9D0" },
+  chipActive: { backgroundColor: brand.cyan, borderColor: brand.cyan },
   chipText: { color: brand.text, fontSize: 14, fontWeight: "600" },
-  chipTextActive: { color: "#06201F" },
+  chipTextActive: { color: brand.onGradient },
   deadlineHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" },
-  clear: { fontSize: 14, color: "#25D9D0", marginBottom: 6 },
+  clear: { fontSize: 14, color: brand.cyan, marginBottom: 6 },
   deadlineValue: { fontSize: 15, color: brand.text, marginBottom: 10 },
   calendarCard: {
-    backgroundColor: "rgba(255,255,255,0.03)",
+    backgroundColor: brand.surfaceSolid,
     borderRadius: 16,
     padding: 16,
   },
-  error: { color: "#F87171", fontSize: 13, marginTop: 16 },
+  error: { color: colors.dark.severityHigh, fontSize: 13, marginTop: 16 },
   saveButton: {
-    backgroundColor: "#25D9D0",
+    backgroundColor: brand.cyan,
     borderRadius: 999,
     paddingVertical: 14,
     alignItems: "center",
     marginTop: 24,
   },
-  saveButtonText: { color: "#06201F", fontWeight: "700", fontSize: 16 },
+  saveButtonText: { color: brand.onGradient, fontWeight: "700", fontSize: 16 },
 });

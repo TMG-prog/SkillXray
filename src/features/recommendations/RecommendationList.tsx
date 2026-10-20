@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { brand } from "@/components/ui/brand";
+import { brand } from "@/components/ui/theme";
 import { useAppData } from "@/state/appdatacontext";
 
 export type Recommendation = {
@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 18, fontWeight: "700", color: brand.text, marginBottom: 4 },
   meta: { fontSize: 14, color: brand.muted, marginBottom: 16 },
   matchRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  track: { flex: 1, height: 4, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.08)", overflow: "hidden" },
+  track: { flex: 1, height: 4, borderRadius: 2, backgroundColor: brand.border, overflow: "hidden" },
   fill: { height: 4, borderRadius: 2 },
   matchText: { fontSize: 13, fontWeight: "600", color: brand.text },
   empty: { alignItems: "center", paddingVertical: 48, paddingHorizontal: 16 },
@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: "rgba(37,217,208,0.12)",
+    backgroundColor: brand.tint,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 16,

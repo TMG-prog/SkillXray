@@ -6,7 +6,7 @@ import { Feather } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase";
 import { uploadResume } from "@/services/Resumeservice";
 import { requestResumeParsing } from "@/services/skillAnalysisService";
-import { brand, SERIF } from "@/components/ui/brand";
+import { brand, SERIF } from "@/components/ui/theme";
 
 type Stage = "idle" | "uploading" | "extracting" | "error";
 

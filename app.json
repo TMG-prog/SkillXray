@@ -10,8 +10,7 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true,
-      "usesAppleSignIn": true
+      "supportsTablet": true
     },
     "android": {
       "package": "com.skillxray.mobile"
@@ -21,8 +20,13 @@
     },
     "plugins": [
       "expo-router",
-      "expo-web-browser",
-      "expo-apple-authentication"
-    ]
+      "expo-web-browser"
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "55a91194-1fab-4802-bf07-0eb4175d7d45"
+      }
+    }
   }
 }

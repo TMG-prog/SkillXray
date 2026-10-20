@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
-import { brand } from "./brand";
+import { brand } from "./theme";
 
 interface Props {
   deadlineDates: string[]; // ISO date strings (yyyy-mm-dd) that should show a dot
@@ -99,10 +99,10 @@ const styles = StyleSheet.create({
   weekRow: { flexDirection: "row" },
   dayCell: { flex: 1, aspectRatio: 1, alignItems: "center", justifyContent: "center" },
   dayCircle: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
-  dayCircleSelected: { backgroundColor: "#25D9D0" },
+  dayCircleSelected: { backgroundColor: brand.cyan },
   dayText: { fontSize: 14, color: brand.text },
-  dayTextToday: { color: "#25D9D0", fontWeight: "700" },
-  dayTextSelected: { color: "#06201F", fontWeight: "700" },
-  dot: { width: 4, height: 4, borderRadius: 2, backgroundColor: "#25D9D0", marginTop: 2 },
-  dotSelected: { backgroundColor: "#06201F" },
+  dayTextToday: { color: brand.cyan, fontWeight: "700" },
+  dayTextSelected: { color: brand.onGradient, fontWeight: "700" },
+  dot: { width: 4, height: 4, borderRadius: 2, backgroundColor: brand.cyan, marginTop: 2 },
+  dotSelected: { backgroundColor: brand.onGradient },
 });

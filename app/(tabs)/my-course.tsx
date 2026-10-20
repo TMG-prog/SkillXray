@@ -1,7 +1,7 @@
 import { ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { CourseTracker } from "@/features/course-tracker/CourseTracker";
-import { brand } from "@/components/ui/brand";
+import { brand } from "@/components/ui/theme";
 
 export default function MyCoursesScreen() {
   return (

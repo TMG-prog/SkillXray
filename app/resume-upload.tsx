@@ -1,6 +1,6 @@
 import { ScrollView, StyleSheet, View } from "react-native";
 import { ResumeUploader } from "@/features/resume/ResumeUploader";
-import { brand } from "@/components/ui/brand";
+import { brand } from "@/components/ui/theme";
 
 export default function ResumeUploadScreen() {
   return (

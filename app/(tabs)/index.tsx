@@ -1,31 +1,12 @@
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { supabase } from "@/lib/supabase";
-import { radius, spacing } from "@/components/ui/theme";
+import { brand, radius, spacing, SERIF } from "@/components/ui/theme";
 import { useEffect, useState } from "react";
 import { useAppData } from "@/state/appdatacontext";
-
-// Muted dark-green palette
-const brand = {
-  bg: "#081412",
-  surface: "#101D1A",
-  surfaceLight: "#14231F",
-  border: "rgba(255,255,255,0.08)",
-  text: "#E8F0ED",
-  muted: "#91A29D",
-  green: "#7CC9A5",
-  greenSoft: "#A8D8B9",
-  onGradient: "#092019",
-};
-
-const SERIF = Platform.select({
-  ios: "Georgia",
-  android: "serif",
-  default: "serif",
-});
 
 const QUICK_ACTIONS = [
   { icon: "search", label: "View my results", route: "/analysis" },
@@ -80,7 +61,7 @@ export default function HomeScreen() {
   return (
     <View style={styles.root}>
       <LinearGradient
-        colors={["rgba(124,201,165,0.07)", "rgba(124,201,165,0.02)", "rgba(124,201,165,0)"]}
+        colors={[brand.tint, "transparent"]}
         style={styles.glow}
         pointerEvents="none"
       />
@@ -101,7 +82,7 @@ export default function HomeScreen() {
             <View style={styles.heroInner}>
               <View style={styles.heroRow}>
                 <View style={styles.iconCircle}>
-                  <Feather name="file-text" size={21} color={brand.green} />
+                  <Feather name="file-text" size={21} color={brand.cyan} />
                 </View>
 
                 <View style={styles.heroText}>
@@ -128,7 +109,7 @@ export default function HomeScreen() {
                 style={({ pressed }) => [styles.buttonWrap, pressed && { opacity: 0.85 }]}
               >
                 <LinearGradient
-                  colors={[brand.green, brand.greenSoft]}
+                  colors={[brand.cyan, brand.mint]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={styles.button}
@@ -152,7 +133,7 @@ export default function HomeScreen() {
                 style={({ pressed }) => [styles.actionBox, pressed && { opacity: 0.8 }]}
               >
                 <View style={styles.actionIconCircle}>
-                  <Feather name={a.icon} size={19} color={brand.green} />
+                  <Feather name={a.icon} size={19} color={brand.cyan} />
                 </View>
                 <Text style={styles.actionText}>{a.label}</Text>
               </Pressable>
@@ -171,13 +152,13 @@ const styles = StyleSheet.create({
   container: { padding: spacing.md, paddingBottom: 40 },
   header: { marginTop: spacing.md, marginBottom: spacing.lg },
   headerTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  signOut: { fontSize: 14, fontWeight: "600", color: brand.green },
+  signOut: { fontSize: 14, fontWeight: "600", color: brand.cyan },
   greeting: { fontSize: 15, color: brand.muted, marginBottom: 6 },
   title: { fontFamily: SERIF, fontSize: 32, lineHeight: 37, fontWeight: "400", letterSpacing: -0.5, color: brand.text },
   heroBorder: {
     borderRadius: radius.lg ?? 20,
     borderWidth: 1,
-    borderColor: "rgba(124,201,165,0.18)",
+    borderColor: brand.border,
     marginBottom: spacing.lg,
     backgroundColor: brand.surface,
   },
@@ -189,17 +170,17 @@ const styles = StyleSheet.create({
   iconCircle: {
     width: 44, height: 44, borderRadius: 22,
     alignItems: "center", justifyContent: "center",
-    backgroundColor: "rgba(124,201,165,0.08)",
-    borderWidth: 1, borderColor: "rgba(124,201,165,0.10)",
+    backgroundColor: brand.tint,
+    borderWidth: 1, borderColor: brand.border,
   },
   readinessChip: {
-    backgroundColor: "rgba(124,201,165,0.12)",
+    backgroundColor: brand.tint,
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 4,
     alignSelf: "flex-start",
   },
-  readinessChipText: { color: brand.green, fontWeight: "700", fontSize: 13 },
+  readinessChipText: { color: brand.mint, fontWeight: "700", fontSize: 13 },
   buttonWrap: { borderRadius: 999, overflow: "hidden" },
   button: { height: 48, alignItems: "center", justifyContent: "center" },
   buttonText: { color: brand.onGradient, fontSize: 15, fontWeight: "700" },
@@ -213,7 +194,7 @@ const styles = StyleSheet.create({
   actionIconCircle: {
     width: 40, height: 40, borderRadius: 20,
     alignItems: "center", justifyContent: "center",
-    backgroundColor: "rgba(124,201,165,0.07)",
+    backgroundColor: brand.tint,
   },
   actionText: { fontSize: 13, fontWeight: "600", color: brand.text, textAlign: "center" },
 });

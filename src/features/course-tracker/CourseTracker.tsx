@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
 import { View, Text, StyleSheet, Pressable, FlatList, Linking } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import { brand, SERIF } from "@/components/ui/brand";
+import { brand, SERIF } from "@/components/ui/theme";
 import { MonthCalendar } from "@/components/ui/calendar";
 import { StatusBadge } from "@/components/ui/statusbadge";
 import { useAppData } from "@/state/appdatacontext";
@@ -37,8 +38,10 @@ export function CourseTracker() {
       <View style={styles.container}>
         <View style={styles.headerRow}>
           <Text style={styles.title}>My Courses</Text>
-          <Pressable style={styles.addButton} onPress={() => router.push("/add-course")}>
-            <Text style={styles.addButtonText}>+ Add</Text>
+          <Pressable style={styles.addButtonWrap} onPress={() => router.push("/add-course")}>
+            <LinearGradient colors={[brand.cyan, brand.mint]} style={styles.addButton}>
+              <Text style={styles.addButtonText}>+ Add</Text>
+            </LinearGradient>
           </Pressable>
         </View>
         <Text style={styles.subtitle}>
@@ -47,14 +50,16 @@ export function CourseTracker() {
 
         <View style={styles.emptyState}>
           <View style={styles.emptyIconCircle}>
-            <Feather name="calendar" size={24} color="#25D9D0" />
+            <Feather name="calendar" size={24} color={brand.cyan} />
           </View>
           <Text style={styles.emptyTitle}>No courses tracked yet</Text>
           <Text style={styles.emptyMessage}>
             Add a course you've signed up for elsewhere to keep its deadline in view.
           </Text>
-          <Pressable style={styles.emptyButton} onPress={() => router.push("/add-course")}>
-            <Text style={styles.emptyButtonText}>Add your first course</Text>
+          <Pressable style={styles.emptyButtonWrap} onPress={() => router.push("/add-course")}>
+            <LinearGradient colors={[brand.cyan, brand.mint]} style={styles.emptyButton}>
+              <Text style={styles.emptyButtonText}>Add your first course</Text>
+            </LinearGradient>
           </Pressable>
         </View>
       </View>
@@ -65,8 +70,10 @@ export function CourseTracker() {
     <View style={styles.container}>
       <View style={styles.headerRow}>
         <Text style={styles.title}>My Courses</Text>
-        <Pressable style={styles.addButton} onPress={() => router.push("/add-course")}>
-          <Text style={styles.addButtonText}>+ Add</Text>
+        <Pressable style={styles.addButtonWrap} onPress={() => router.push("/add-course")}>
+          <LinearGradient colors={[brand.cyan, brand.mint]} style={styles.addButton}>
+            <Text style={styles.addButtonText}>+ Add</Text>
+          </LinearGradient>
         </Pressable>
       </View>
       <Text style={styles.subtitle}>
@@ -139,27 +146,27 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   title: { fontFamily: SERIF, fontSize: 28, color: brand.text, letterSpacing: -0.5 },
   subtitle: { fontSize: 15, lineHeight: 21, color: brand.muted, marginTop: 8, marginBottom: 20 },
+  addButtonWrap: { borderRadius: 999, overflow: "hidden" },
   addButton: {
-    backgroundColor: "#25D9D0",
     borderRadius: 999,
     paddingVertical: 8,
     paddingHorizontal: 16,
   },
-  addButtonText: { color: "#06201F", fontWeight: "700", fontSize: 14 },
+  addButtonText: { color: brand.onGradient, fontWeight: "700", fontSize: 14 },
   nextDeadlineCard: {
-    backgroundColor: "rgba(37,217,208,0.12)",
+    backgroundColor: brand.tint,
     borderRadius: 16,
     padding: 16,
     marginBottom: 20,
   },
-  nextDeadlineLabel: { fontSize: 12, color: "#25D9D0", fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5 },
+  nextDeadlineLabel: { fontSize: 12, color: brand.cyan, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5 },
   nextDeadlineTitle: { fontSize: 17, fontWeight: "600", color: brand.text, marginTop: 4 },
   nextDeadlineDate: { fontSize: 14, color: brand.muted, marginTop: 2 },
-  calendarCard: { backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 16, padding: 16, marginBottom: 24 },
+  calendarCard: { backgroundColor: brand.surface, borderRadius: 16, padding: 16, marginBottom: 24 },
   listHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
   listHeader: { fontSize: 15, fontWeight: "700", color: brand.text },
-  clearFilter: { fontSize: 14, color: "#25D9D0" },
-  separator: { height: 1, backgroundColor: "rgba(255,255,255,0.08)", marginVertical: 12 },
+  clearFilter: { fontSize: 14, color: brand.cyan },
+  separator: { height: 1, backgroundColor: brand.border, marginVertical: 12 },
   courseRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" },
   courseTitle: { fontSize: 16, fontWeight: "600", color: brand.text },
   courseProvider: { fontSize: 13, color: brand.muted, marginTop: 2 },
@@ -168,11 +175,12 @@ const styles = StyleSheet.create({
   emptyState: { alignItems: "center", paddingVertical: 48, paddingHorizontal: 16 },
   emptyIconCircle: {
     width: 56, height: 56, borderRadius: 28,
-    backgroundColor: "rgba(37,217,208,0.12)",
+    backgroundColor: brand.tint,
     alignItems: "center", justifyContent: "center", marginBottom: 16,
   },
   emptyTitle: { fontSize: 18, fontWeight: "700", color: brand.text, marginBottom: 6 },
   emptyMessage: { fontSize: 14, color: brand.muted, textAlign: "center", marginBottom: 20, lineHeight: 20 },
-  emptyButton: { backgroundColor: "#25D9D0", borderRadius: 999, paddingVertical: 12, paddingHorizontal: 24 },
-  emptyButtonText: { color: "#06201F", fontWeight: "700", fontSize: 14 },
+  emptyButtonWrap: { borderRadius: 999, overflow: "hidden" },
+  emptyButton: { borderRadius: 999, paddingVertical: 12, paddingHorizontal: 24 },
+  emptyButtonText: { color: brand.onGradient, fontWeight: "700", fontSize: 14 },
 });
