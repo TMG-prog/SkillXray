@@ -5,15 +5,13 @@ import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase";
 import { uploadResume } from "@/services/Resumeservice";
-import { requestResumeParsing, pollForAnalysis, getSkillGaps } from "@/services/skillAnalysisService";
-import { useAppData } from "@/state/appdatacontext";
+import { requestResumeParsing } from "@/services/skillAnalysisService";
 import { brand, SERIF } from "@/components/ui/brand";
 
-type Stage = "idle" | "uploading" | "analyzing" | "error";
+type Stage = "idle" | "uploading" | "extracting" | "error";
 
 export function ResumeUploader() {
   const router = useRouter();
-  const { completeResumeUpload } = useAppData();
   const [fileName, setFileName] = useState<string | null>(null);
   const [fileUri, setFileUri] = useState<string | null>(null);
   const [mimeType, setMimeType] = useState<string | undefined>();
@@ -22,9 +20,9 @@ export function ResumeUploader() {
 
   async function pickResume() {
     const result = await DocumentPicker.getDocumentAsync({
+      // The parser reads PDF and .docx (not the old .doc format).
       type: [
         "application/pdf",
-        "application/msword",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       ],
     });
@@ -37,8 +35,6 @@ export function ResumeUploader() {
   }
 
   async function handleAnalyze() {
-    console.log("[analyze] pressed", { fileName, fileUri });
-
     if (!fileUri || !fileName) {
       setStage("error");
       setErrorMessage("Choose a resume file first.");
@@ -46,45 +42,34 @@ export function ResumeUploader() {
     }
 
     setErrorMessage(null);
-    setStage("uploading"); // show feedback right away
+    setStage("uploading");
 
     try {
-      // getSession reads the stored session, so it doesn't wait on a network call
       const { data: { session } } = await supabase.auth.getSession();
       const user = session?.user;
       if (!user) throw new Error("You need to be signed in to upload a resume.");
 
-      console.log("[analyze] uploading for", user.id);
       const resume = await uploadResume({ uri: fileUri, name: fileName, mimeType }, user.id);
 
-      setStage("analyzing");
-      console.log("[analyze] requesting parse", resume.id);
+      // Parses the file, runs the skill extractor and saves the skills.
+      setStage("extracting");
       await requestResumeParsing(resume.id);
 
-      console.log("[analyze] polling");
-      const analysis = await pollForAnalysis(resume.id);
-      const gaps = await getSkillGaps(analysis.id);
-      console.log("[analyze] got gaps", gaps.length);
-
-      completeResumeUpload({
-        resumeFileName: fileName,
-        readiness: analysis.readiness_index,
-        gaps: gaps.map((g) => ({
-          skill: g.skill_name,
-          severity: g.gap_severity >= 0.66 ? "high" : g.gap_severity >= 0.33 ? "medium" : "low",
-          fill: 1 - g.gap_severity,
-        })),
+      // The skill gap analyzer isn't built yet, so show the extracted skills instead.
+      // When it is: poll with pollForAnalysis(resume.id), load getSkillGaps(...),
+      // call completeResumeUpload(...) and go to "/(tabs)/analysis".
+      router.replace({
+        pathname: "/resume-skills",
+        params: { resumeId: resume.id, fileName },
       });
-
-      router.replace("/(tabs)/analysis");
     } catch (err: any) {
       console.error("[analyze] failed", err);
       setStage("error");
-      setErrorMessage(err?.message || "Something went wrong analyzing your resume.");
+      setErrorMessage(err?.message || "Something went wrong reading your resume.");
     }
   }
 
-  const busy = stage === "uploading" || stage === "analyzing";
+  const busy = stage === "uploading" || stage === "extracting";
 
   return (
     <View style={{ padding: 20 }}>
@@ -97,7 +82,7 @@ export function ResumeUploader() {
 
       <View style={styles.dropzone}>
         <Feather name="upload-cloud" size={28} color={brand.muted} />
-        <Text style={{ color: brand.muted, marginTop: 8 }}>{fileName ?? "PDF or Word document"}</Text>
+        <Text style={{ color: brand.muted, marginTop: 8 }}>{fileName ?? "PDF or Word (.docx) document"}</Text>
         <TrackerButton
           onPress={pickResume}
           label={fileName ? "Choose a different file" : "Choose file"}
@@ -109,7 +94,9 @@ export function ResumeUploader() {
 
       <TrackerButton
         onPress={handleAnalyze}
-        label={stage === "uploading" ? "Uploading…" : stage === "analyzing" ? "Analyzing…" : "Analyze my resume"}
+        label={
+          stage === "uploading" ? "Uploading…" : stage === "extracting" ? "Extracting skills…" : "Extract my skills"
+        }
         disabled={!fileName || busy}
         solid
         loading={busy}

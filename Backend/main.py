@@ -1,74 +1,93 @@
+"""
+Skill extraction service. The Supabase edge function posts the resume text here
+and saves the result itself, so this service never touches Supabase.
+
+POST /extract   {"text": "..."}   ->   {"skills": ["python", "sql", ...]}
+"""
+import hmac
 import os
-import torch
-from fastapi import FastAPI, HTTPException, Security
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from transformers import AutoTokenizer, AutoModelForTokenClassification
+from contextlib import asynccontextmanager
 
-app = FastAPI(title="SkillXray Extraction API")
-security = HTTPBearer()
+from fastapi import FastAPI, Header, HTTPException
+from pydantic import BaseModel
+from transformers import pipeline
 
-# Ensure this matches your exact Hugging Face repository name (case-sensitive)
-MODEL_REPO = os.getenv("MODEL_REPO", "Tracymgprog/skillxray_skillextraction")
-MODEL_API_KEY = os.getenv("MODEL_API_KEY", "")
+MODEL_ID = os.environ["SKILL_MODEL_ID"]  # your Hugging Face model id
+HF_TOKEN = os.environ.get("HF_TOKEN")  # only needed for a private model
+API_KEY = os.environ["MODEL_API_KEY"]  # same value as MODEL_API_KEY in Supabase
 
-tokenizer = None
-model = None
+extractor = None
 
-@app.on_event("startup")
-async def load_model_on_startup():
-    global tokenizer, model
-    print(f"Loading fine-tuned model and tokenizer from Hugging Face Hub: {MODEL_REPO}...")
-    
-    # use_fast=False prevents tokenizer conversion crashes
-tokenizer = AutoTokenizer.from_pretrained(
-    MODEL_REPO,
-    use_fast=True
-)    model = AutoModelForTokenClassification.from_pretrained(MODEL_REPO)
-    model.eval()
-    
-    if torch.cuda.is_available():
-        model = model.cuda()
-        
-    print("Model and tokenizer loaded successfully!")
 
-@app.post("/api/v1/extract-skills")
-async def extract_skills(payload: dict, credentials: HTTPAuthorizationCredentials = Security(security)):
-    if MODEL_API_KEY and credentials.credentials != MODEL_API_KEY:
-        raise HTTPException(status_code=401, detail="Invalid authorization token.")
-    
-    if not model or not tokenizer:
-        raise HTTPException(status_code=503, detail="Model is still initializing. Please try again in a moment.")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global extractor
+    # Raw token output (no aggregation): B/I tags are merged below using offsets.
+    extractor = pipeline("token-classification", model=MODEL_ID, token=HF_TOKEN)
+    yield
 
-    text = payload.get("text", "")
-    if not text:
-        raise HTTPException(status_code=400, detail="Text field is required.")
 
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=160, return_offsets_mapping=True)
-    offset_mapping = inputs.pop("offset_mapping")[0]
-    
-    if torch.cuda.is_available():
-        inputs = {k: v.cuda() for k, v in inputs.items()}
+app = FastAPI(lifespan=lifespan)
 
-    with torch.no_grad():
-        outputs = model(**inputs)
-        predictions = torch.argmax(outputs.logits, dim=-1)[0]
 
-    extracted_skills = []
-    current_span = []
-    for idx, pred in enumerate(predictions.cpu().numpy()):
-        if int(pred) in (1, 2):  # B-SKILL or I-SKILL
-            start, end = int(offset_mapping[idx][0]), int(offset_mapping[idx][1])
-            if start < end:
-                current_span.append(text[start:end])
-        elif current_span:
-            skill_text = "".join(current_span).replace("##", "").strip()
-            if len(skill_text) > 1:
-                extracted_skills.append(skill_text)
-            current_span = []
+class ExtractRequest(BaseModel):
+    text: str
 
-    unique_skills = list(dict.fromkeys(extracted_skills))
 
-    return {
-        "skills": unique_skills,
-        "count": len(unique_skills)
-    }
+def chunk(text: str, size: int = 1000):
+    # Small chunks keep each piece under the model's 512-token limit.
+    i = 0
+    while i < len(text):
+        end = min(i + size, len(text))
+        if end < len(text):
+            space = text.rfind(" ", i, end)
+            if space > i + size // 2:
+                end = space
+        yield text[i:end]
+        i = end
+
+
+def spans_from_tokens(tokens, text):
+    spans, cur = [], None
+    for t in tokens:
+        label = str(t["entity"]).upper()
+        if label.startswith("B"):
+            cur = {"start": t["start"], "end": t["end"], "scores": [float(t["score"])]}
+            spans.append(cur)
+        elif label.startswith("I") and cur and t["start"] - cur["end"] <= 2:
+            cur["end"] = t["end"]
+            cur["scores"].append(float(t["score"]))
+        else:
+            cur = None
+    for s in spans:
+        skill = text[s["start"]:s["end"]].strip(" ,.;:()[]\u2022-")
+        yield skill, sum(s["scores"]) / len(s["scores"])
+
+
+@app.get("/health")
+def health():
+    return {"ok": extractor is not None}
+
+
+@app.post("/extract")
+def extract(req: ExtractRequest, authorization: str = Header(default="")):
+    token = authorization.removeprefix("Bearer ").strip()
+    if not hmac.compare_digest(token, API_KEY):
+        raise HTTPException(401, "Unauthorized.")
+
+    text = " ".join(req.text.split())
+    pieces = list(chunk(text))[:60]
+    if not pieces:
+        return {"skills": []}
+
+    found = {}
+    for piece, tokens in zip(pieces, extractor(pieces, batch_size=16)):
+        for skill, score in spans_from_tokens(tokens, piece):
+            if not (2 <= len(skill) <= 60):
+                continue
+            key = skill.lower()
+            if key not in found or score > found[key][1]:
+                found[key] = (skill, score)
+
+    ranked = sorted(found.values(), key=lambda s: -s[1])
+    return {"skills": [skill for skill, _ in ranked]}

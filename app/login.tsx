@@ -7,7 +7,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import AuthForm, { theme } from "./AuthForm";
+import AuthForm, { theme } from "../src/features/auth/AuthForm";
 
 const DOME = 700;
 

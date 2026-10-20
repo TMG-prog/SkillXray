@@ -133,24 +133,66 @@ async function parseResume(bytes: Uint8Array): Promise<Parsed> {
   return { text, sections: splitSections(text), contact: extractContact(text) };
 }
 
+const RETRYABLE = [502, 503, 504];
+
+// CHANGE 1: timeout + retry, so a sleeping/cold-starting model service doesn't
+// leave the app on "Analyzing…" forever (edge functions are cut off after ~150s).
 async function extractSkillsFromModel(text: string): Promise<string[]> {
+  // TEST MODE: if the MOCK_SKILLS secret is set (comma-separated), skip the model
+  // and return those skills. Remove the secret to use the real model again.
+  const mock = Deno.env.get("MOCK_SKILLS");
+  if (mock) return mock.split(",").map((s) => s.trim()).filter(Boolean);
+
   const modelUrl = Deno.env.get("MODEL_URL");
   if (!modelUrl) throw new Error("MODEL_URL environment variable is not set.");
 
-  const res = await fetch(modelUrl, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${Deno.env.get("MODEL_API_KEY") ?? ""}`,
-    },
-    body: JSON.stringify({ text }),
-  });
+  let lastStatus = 0;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await fetch(modelUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${Deno.env.get("MODEL_API_KEY") ?? ""}`,
+        },
+        body: JSON.stringify({ text }),
+        signal: AbortSignal.timeout(40_000),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return Array.isArray(data.skills)
+          ? data.skills.filter((s: unknown): s is string => typeof s === "string")
+          : [];
+      }
+      lastStatus = res.status;
+      console.error(`[parse-resume] model call to ${modelUrl} returned ${res.status}`);
+      if (!RETRYABLE.includes(res.status)) break; // a real error, not a cold start
+    } catch (e) {
+      console.error(`[parse-resume] model call to ${modelUrl} failed:`, e);
+      lastStatus = 0; // timeout or network error: try again
+    }
+    await new Promise((r) => setTimeout(r, 4000));
+  }
 
-  if (!res.ok) throw new Error(`Model extraction service returned status ${res.status}`);
-  const data = await res.json();
-  return data.skills ?? [];
+  if (lastStatus && !RETRYABLE.includes(lastStatus)) {
+    throw new Error(`Model extraction service returned status ${lastStatus}`);
+  }
+  throw new ParseError("The skill extraction service is starting up. Please try again in a minute.", 503);
 }
 
+// CHANGE 2: clean and de-duplicate names (case-insensitive) before saving.
+function normalizeSkills(names: string[]): string[] {
+  const seen = new Map<string, string>();
+  for (const n of names) {
+    const name = n.replace(/\s+/g, " ").trim();
+    if (name.length < 2 || name.length > 60) continue;
+    const key = name.toLowerCase();
+    if (!seen.has(key)) seen.set(key, name);
+  }
+  return [...seen.values()];
+}
+
+// CHANGE 3: results are keyed by lowercase name, so a lookup can't come back undefined.
 async function getSkillIds(supabase: any, names: string[]): Promise<Record<string, string>> {
   if (!names.length) return {};
   const { data: existing, error } = await supabase
@@ -160,16 +202,16 @@ async function getSkillIds(supabase: any, names: string[]): Promise<Record<strin
   if (error) throw new Error(`Loading skills failed: ${error.message}`);
 
   const ids: Record<string, string> = {};
-  for (const s of existing ?? []) ids[s.name] = s.id;
+  for (const s of existing ?? []) ids[String(s.name).toLowerCase()] = s.id;
 
-  const missing = names.filter((n) => !ids[n]);
+  const missing = names.filter((n) => !ids[n.toLowerCase()]);
   if (missing.length) {
     const { data: created, error: insErr } = await supabase
       .from("skills")
       .insert(missing.map((name) => ({ name })))
       .select("id, name");
     if (insErr) throw new Error(`Creating skills failed: ${insErr.message}`);
-    for (const s of created ?? []) ids[s.name] = s.id;
+    for (const s of created ?? []) ids[String(s.name).toLowerCase()] = s.id;
   }
   return ids;
 }
@@ -222,19 +264,22 @@ async function handle(req: Request): Promise<Response> {
       })
       .eq("id", resumeId);
 
-    // 2. Extract skills using your fine-tuned JobBERT model via FastAPI
-    const extractedSkills = await extractSkillsFromModel(parsed.text);
+    // 2. Extract skills using your fine-tuned JobBERT model
+    const extractedSkills = normalizeSkills(await extractSkillsFromModel(parsed.text));
+
+    // CHANGE 4: clear this resume's old skills first, so re-analyzing doesn't leave stale ones.
+    const { error: delErr } = await supabase.from("resume_skills").delete().eq("resume_id", resumeId);
+    if (delErr) return json({ error: `Clearing old skills failed: ${delErr.message}` }, 500);
 
     if (extractedSkills.length > 0) {
       const skillIds = await getSkillIds(supabase, extractedSkills);
 
       // 3. Save into resume_skills table
       const { error: rsErr } = await supabase.from("resume_skills").upsert(
-        extractedSkills.map((skillName) => ({
-          resume_id: resumeId,
-          skill_id: skillIds[skillName],
-        })),
-        { onConflict: "resume_id,skill_id" }
+        extractedSkills
+          .filter((name) => skillIds[name.toLowerCase()])
+          .map((name) => ({ resume_id: resumeId, skill_id: skillIds[name.toLowerCase()] })),
+        { onConflict: "resume_id,skill_id" },
       );
       if (rsErr) return json({ error: `Saving resume skills failed: ${rsErr.message}` }, 500);
     }

@@ -43,6 +43,15 @@ export default function RootLayout() {
             }}
           />
           <Stack.Screen
+            name="resume-skills"
+            options={{
+              headerShown: true,
+              title: "Your skills",
+              headerStyle: { backgroundColor: "#03110F" },
+              headerTintColor: "#EEF7F4",
+            }}
+          />
+          <Stack.Screen
             name="add-course"
             options={{
               presentation: "modal",
@@ -57,6 +66,10 @@ export default function RootLayout() {
         <Stack.Protected guard={!session}>
           <Stack.Screen name="login" />
         </Stack.Protected>
+
+        {/* Not guarded: the password-reset link opens this while signed out.
+            Remove this line if you haven't added app/reset-password.tsx. */}
+        <Stack.Screen name="reset-password" />
       </Stack>
     </AppDataProvider>
   );

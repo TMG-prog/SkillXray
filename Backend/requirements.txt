@@ -1,6 +1,5 @@
-torch
-transformers
-sentencepiece
-tiktoken
 fastapi
-uvicorn
+uvicorn[standard]
+transformers
+torch
+pydantic
