@@ -5,13 +5,15 @@ import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase";
 import { uploadResume } from "@/services/Resumeservice";
-import { requestResumeParsing } from "@/services/skillAnalysisService";
+import { analyzeResumeFile, USE_MOCK_ANALYSIS } from "@/services/skillAnalysisService";
+import { useAppData } from "@/state/appdatacontext";
 import { brand, SERIF } from "@/components/ui/theme";
 
-type Stage = "idle" | "uploading" | "extracting" | "error";
+type Stage = "idle" | "uploading" | "analyzing" | "error";
 
 export function ResumeUploader() {
   const router = useRouter();
+  const { completeResumeUpload } = useAppData();
   const [fileName, setFileName] = useState<string | null>(null);
   const [fileUri, setFileUri] = useState<string | null>(null);
   const [mimeType, setMimeType] = useState<string | undefined>();
@@ -35,41 +37,80 @@ export function ResumeUploader() {
   }
 
   async function handleAnalyze() {
-    if (!fileUri || !fileName) {
+    if (!USE_MOCK_ANALYSIS && (!fileUri || !fileName)) {
       setStage("error");
       setErrorMessage("Choose a resume file first.");
       return;
     }
 
     setErrorMessage(null);
-    setStage("uploading");
+    setStage(USE_MOCK_ANALYSIS ? "analyzing" : "uploading");
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const user = session?.user;
       if (!user) throw new Error("You need to be signed in to upload a resume.");
 
-      const resume = await uploadResume({ uri: fileUri, name: fileName, mimeType }, user.id);
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("target_role")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (profileError) throw profileError;
+      const targetRole = profile?.target_role?.trim();
+      if (!targetRole) throw new Error("Choose a target role before analyzing your resume.");
 
-      // Parses the file, runs the skill extractor and saves the skills.
-      setStage("extracting");
-      await requestResumeParsing(resume.id);
+      let resumeId: string | null = null;
+      if (!USE_MOCK_ANALYSIS) {
+        if (!fileUri || !fileName) throw new Error("Choose a resume file first.");
+        const resume = await uploadResume({ uri: fileUri, name: fileName, mimeType }, user.id);
+        resumeId = resume.id;
+      }
 
-      // The skill gap analyzer isn't built yet, so show the extracted skills instead.
-      // When it is: poll with pollForAnalysis(resume.id), load getSkillGaps(...),
-      // call completeResumeUpload(...) and go to "/(tabs)/analysis".
+      setStage("analyzing");
+      const result = await analyzeResumeFile({
+        uri: fileUri ?? "",
+        name: fileName ?? "Demo resume",
+        mimeType,
+      }, targetRole);
+      const mostImportantGapCount = Math.ceil(result.gaps.length / 3);
+      const mediumGapCount = Math.ceil((result.gaps.length * 2) / 3);
+      await completeResumeUpload({
+        demo: result.demo === true,
+        resumeFileName: fileName ?? "Demo resume",
+        targetRole: result.role,
+        readiness: result.readiness,
+        covered: result.covered.map((item) => item.skill),
+        requirements: [...result.covered, ...result.gaps],
+        relationships: result.skill_relationships,
+        marketInsights: {
+          highRoiGaps: result.market_delta.high_roi_gaps.map((gap) => ({
+            skill: gap.skill,
+            frequency: gap.frequency,
+            readinessGainPoints: gap.readiness_gain_pp,
+            evidence: gap.evidence,
+          })),
+          highRoiNote: result.market_delta.high_roi_note,
+          emergingNote: result.market_delta.emerging_note,
+        },
+        warnings: result.warnings,
+        gaps: result.gaps.map((gap, index) => ({
+          skill: gap.skill,
+          severity: index < mostImportantGapCount ? "high" : index < mediumGapCount ? "medium" : "low",
+          fill: gap.credit,
+        })),
+      }, user.id, resumeId, targetRole);
       router.replace({
-        pathname: "/resume-skills",
-        params: { resumeId: resume.id, fileName },
+        pathname: "/(tabs)/analysis",
       });
-    } catch (err: any) {
+    } catch (err) {
       console.error("[analyze] failed", err);
       setStage("error");
-      setErrorMessage(err?.message || "Something went wrong reading your resume.");
+      setErrorMessage(err instanceof Error ? err.message : "Something went wrong reading your resume.");
     }
   }
 
-  const busy = stage === "uploading" || stage === "extracting";
+  const busy = stage === "uploading" || stage === "analyzing";
 
   return (
     <View style={{ padding: 20 }}>
@@ -77,12 +118,16 @@ export function ResumeUploader() {
         Upload your resume
       </Text>
       <Text style={{ color: brand.muted, marginBottom: 20 }}>
-        We'll extract your skills and compare them against your target role.
+        {USE_MOCK_ANALYSIS
+          ? "Demo mode is on. Sample results will be shown without uploading your resume or contacting the analysis model."
+          : "We'll extract your skills and compare them against your target role."}
       </Text>
 
       <View style={styles.dropzone}>
         <Feather name="upload-cloud" size={28} color={brand.muted} />
-        <Text style={{ color: brand.muted, marginTop: 8 }}>{fileName ?? "PDF or Word (.docx) document"}</Text>
+        <Text style={{ color: brand.muted, marginTop: 8 }}>
+          {fileName ?? (USE_MOCK_ANALYSIS ? "Resume optional in demo mode" : "PDF or Word (.docx) document")}
+        </Text>
         <TrackerButton
           onPress={pickResume}
           label={fileName ? "Choose a different file" : "Choose file"}
@@ -95,9 +140,11 @@ export function ResumeUploader() {
       <TrackerButton
         onPress={handleAnalyze}
         label={
-          stage === "uploading" ? "Uploading…" : stage === "extracting" ? "Extracting skills…" : "Extract my skills"
+          stage === "uploading" ? "Uploading…"
+            : stage === "analyzing" ? (USE_MOCK_ANALYSIS ? "Generating demo…" : "Analyzing resume…")
+              : USE_MOCK_ANALYSIS ? "Generate demo analysis" : "Analyze my resume"
         }
-        disabled={!fileName || busy}
+        disabled={(!fileName && !USE_MOCK_ANALYSIS) || busy}
         solid
         loading={busy}
       />

@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { brand, radius, spacing, SERIF } from "@/components/ui/theme";
 import { useEffect, useState } from "react";
 import { useAppData } from "@/state/appdatacontext";
+import RolePicker, { formatRole, type JobRole } from "@/components/RolePicker";
 
 const QUICK_ACTIONS = [
   { icon: "search", label: "View my results", route: "/analysis" },
@@ -17,6 +18,8 @@ export default function HomeScreen() {
   const router = useRouter();
   const { analysis } = useAppData();
   const [userName, setUserName] = useState<string | null>(null);
+  const [selectedRole, setSelectedRole] = useState<string | null>(null);
+  const [isUpdatingRole, setIsUpdatingRole] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -30,19 +33,23 @@ export default function HomeScreen() {
           const authName = user.user_metadata?.full_name;
           if (typeof authName === "string" && authName.trim()) {
             setUserName(authName.trim().split(/\s+/)[0]);
-            return;
           }
 
           const { data } = await supabase
             .from("profiles")
-            .select("full_name")
+            .select("full_name, target_role")
             .eq("id", user.id)
             .single();
 
-          if (data && data.full_name) {
-            setUserName(data.full_name.trim().split(/\s+/)[0]);
-            return;
+          if (data) {
+            if (data.full_name && !userName) {
+              setUserName(data.full_name.trim().split(/\s+/)[0]);
+            }
+            if (data.target_role) {
+              setSelectedRole(data.target_role);
+            }
           }
+          return;
         }
 
         setUserName("there");
@@ -56,7 +63,28 @@ export default function HomeScreen() {
     return () => { isMounted = false; };
   }, []);
 
+  const handleSelectRole = async (role: JobRole) => {
+    const previous = selectedRole;
+    setSelectedRole(role.title);
+    setIsUpdatingRole(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { error } = await supabase
+          .from("profiles")
+          .upsert({ id: user.id, target_role: role.title, updated_at: new Date().toISOString() });
+        if (error) throw error;
+      }
+    } catch (err) {
+      console.error("Error updating target role:", err);
+      setSelectedRole(previous); // roll back if saving failed
+    } finally {
+      setIsUpdatingRole(false);
+    }
+  };
+
   const hasAnalysis = !!analysis;
+  const roleLabel = selectedRole ? formatRole(selectedRole) : null;
 
   return (
     <View style={styles.root}>
@@ -68,6 +96,7 @@ export default function HomeScreen() {
 
       <SafeAreaView style={styles.safeArea} edges={["top"]}>
         <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+          {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerTop}>
               <Text style={styles.greeting}>Hello, {userName ?? "there"}</Text>
@@ -78,6 +107,24 @@ export default function HomeScreen() {
             <Text style={styles.title}>Let's build your career together.</Text>
           </View>
 
+          {/* Target Role Selection Section */}
+          <View style={styles.roleContainer}>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionTitle}>Target Role</Text>
+              {isUpdatingRole && <Text style={styles.savingText}>Saving...</Text>}
+            </View>
+            <Text style={styles.sectionSubtitle}>
+              Select your target role to tailor resume analysis and skill recommendations.
+            </Text>
+
+            <RolePicker
+              value={selectedRole}
+              onSelect={handleSelectRole}
+              disabled={isUpdatingRole}
+            />
+          </View>
+
+          {/* Hero / Readiness Score Card */}
           <View style={styles.heroBorder}>
             <View style={styles.heroInner}>
               <View style={styles.heroRow}>
@@ -90,9 +137,11 @@ export default function HomeScreen() {
                     {hasAnalysis ? "Your readiness score" : "Analyze your skills"}
                   </Text>
                   <Text style={styles.heroSubtitle}>
-                    {hasAnalysis
-                      ? `You're at ${Math.round(analysis!.readiness)}% readiness for your target role. Re-run the analysis any time you update your resume.`
-                      : "Upload your resume and see how ready you are for your target roles."}
+                    {!roleLabel
+                      ? "Choose a target role above, then upload your resume to see how ready you are."
+                      : hasAnalysis
+                        ? `You're at ${Math.round(analysis!.readiness)}% readiness for target role "${roleLabel}". Re-run the analysis any time you update your resume.`
+                        : `Upload your resume to see how ready you are for the ${roleLabel} role.`}
                   </Text>
                 </View>
 
@@ -105,8 +154,13 @@ export default function HomeScreen() {
 
               <Pressable
                 onPress={() => router.push("/resume-upload")}
+                disabled={!selectedRole}
                 accessibilityRole="button"
-                style={({ pressed }) => [styles.buttonWrap, pressed && { opacity: 0.85 }]}
+                style={({ pressed }) => [
+                  styles.buttonWrap,
+                  !selectedRole && { opacity: 0.4 },
+                  pressed && { opacity: 0.85 },
+                ]}
               >
                 <LinearGradient
                   colors={[brand.cyan, brand.mint]}
@@ -122,6 +176,7 @@ export default function HomeScreen() {
             </View>
           </View>
 
+          {/* Quick Actions Section */}
           <Text style={styles.sectionTitle}>Quick actions</Text>
 
           <View style={styles.quickRow}>
@@ -155,6 +210,19 @@ const styles = StyleSheet.create({
   signOut: { fontSize: 14, fontWeight: "600", color: brand.cyan },
   greeting: { fontSize: 15, color: brand.muted, marginBottom: 6 },
   title: { fontFamily: SERIF, fontSize: 32, lineHeight: 37, fontWeight: "400", letterSpacing: -0.5, color: brand.text },
+
+  // Target Role Section
+  roleContainer: { marginBottom: spacing.lg },
+  sectionHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  sectionSubtitle: { fontSize: 13, color: brand.muted, marginBottom: spacing.sm },
+  savingText: { fontSize: 12, color: brand.cyan, fontWeight: "600" },
+
+  // Hero Card
   heroBorder: {
     borderRadius: radius.lg ?? 20,
     borderWidth: 1,
@@ -184,8 +252,10 @@ const styles = StyleSheet.create({
   buttonWrap: { borderRadius: 999, overflow: "hidden" },
   button: { height: 48, alignItems: "center", justifyContent: "center" },
   buttonText: { color: brand.onGradient, fontSize: 15, fontWeight: "700" },
-  sectionTitle: { fontSize: 18, fontWeight: "700", color: brand.text, marginBottom: spacing.md },
-  quickRow: { flexDirection: "row", gap: spacing.md },
+
+  // Section & Quick Actions
+  sectionTitle: { fontSize: 18, fontWeight: "700", color: brand.text, marginBottom: spacing.xs ?? 8 },
+  quickRow: { flexDirection: "row", gap: spacing.md, marginTop: spacing.xs },
   actionBox: {
     flex: 1, backgroundColor: brand.surface, borderWidth: 1, borderColor: brand.border,
     borderRadius: 16, paddingVertical: spacing.lg, paddingHorizontal: spacing.md,

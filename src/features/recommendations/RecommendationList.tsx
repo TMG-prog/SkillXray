@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -9,25 +9,91 @@ export type Recommendation = {
   id: string;
   title: string;
   provider: string;
-  duration: string;
+  url: string;
   skill: string; // the gap this closes
-  match: number; // 0-100, how well it fits the gap
 };
 
-// TODO: replace with a real Recommendation Engine query (ranked learning
-// resources per skill gap). For now, derives one mock course per identified
-// gap so the list at least reflects the user's actual analysis instead of
-// always showing the same three unrelated sample courses.
-function buildMockRecommendations(gapSkills: string[]): Recommendation[] {
-  const PROVIDERS = ["Coursera", "edX", "Udemy"];
-  return gapSkills.map((skill, i) => ({
-    id: String(i + 1),
-    skill,
-    title: `${skill} fundamentals`,
-    provider: PROVIDERS[i % PROVIDERS.length],
-    duration: `${3 + i} hours`,
-    match: Math.max(50, 90 - i * 8),
-  }));
+const COURSES = [
+  {
+    id: "python-for-everybody",
+    title: "Python for Everybody Specialization",
+    provider: "Coursera · University of Michigan",
+    url: "https://www.coursera.org/specializations/python",
+    matches: ["python"],
+  },
+  {
+    id: "sql-for-data-science",
+    title: "SQL for Data Science",
+    provider: "Coursera · University of California, Davis",
+    url: "https://www.coursera.org/learn/sql-for-data-science",
+    matches: ["sql", "database"],
+  },
+  {
+    id: "google-data-analytics",
+    title: "Google Data Analytics Professional Certificate",
+    provider: "Coursera · Google",
+    url: "https://www.coursera.org/professional-certificates/google-data-analytics",
+    matches: ["data analytics", "data analyst", "statistics", "power bi", "tableau", "spreadsheets", "business intelligence"],
+  },
+  {
+    id: "machine-learning-specialization",
+    title: "Machine Learning Specialization",
+    provider: "Coursera · DeepLearning.AI and Stanford",
+    url: "https://www.coursera.org/specializations/machine-learning-introduction",
+    matches: ["machine learning", "artificial intelligence", "data science", "computer vision", "deep learning"],
+  },
+  {
+    id: "google-project-management",
+    title: "Google Project Management Professional Certificate",
+    provider: "Coursera · Google",
+    url: "https://www.coursera.org/professional-certificates/google-project-management",
+    matches: ["project management", "project manager", "project commissioning"],
+  },
+  {
+    id: "google-it-support",
+    title: "Google IT Support Professional Certificate",
+    provider: "Coursera · Google",
+    url: "https://www.coursera.org/professional-certificates/google-it-support",
+    matches: ["it support", "troubleshoot", "operating systems", "computer technology", "technical support"],
+  },
+  {
+    id: "java-programming",
+    title: "Java Programming and Software Engineering Fundamentals",
+    provider: "Coursera · Duke University",
+    url: "https://www.coursera.org/specializations/java-programming",
+    matches: ["java"],
+  },
+];
+
+function buildRecommendations(gapSkills: string[]): Recommendation[] {
+  const recommendations = new Map<string, Recommendation>();
+
+  for (const skill of gapSkills) {
+    const normalized = skill.toLowerCase();
+    const course = COURSES.find(({ matches }) =>
+      matches.some((match) => normalized.includes(match)),
+    );
+    if (!course || recommendations.has(course.id)) continue;
+
+    recommendations.set(course.id, {
+      id: course.id,
+      title: course.title,
+      provider: course.provider,
+      url: course.url,
+      skill,
+    });
+  }
+
+  return [...recommendations.values()];
+}
+
+async function openCourse(url: string) {
+  try {
+    await Linking.openURL(url);
+  } catch (error) {
+    console.error("[recommendations] unable to open course page", error);
+    Alert.alert("Couldn't open course", "Please try again or open the course link in your browser.");
+  }
 }
 
 type Props = {
@@ -40,7 +106,7 @@ export function RecommendationList({ items, onPressItem }: Props) {
   const { analysis } = useAppData();
 
   const resolvedItems =
-    items ?? (analysis ? buildMockRecommendations(analysis.gaps.map((g) => g.skill)) : []);
+    items ?? (analysis ? buildRecommendations(analysis.gaps.map((g) => g.skill)) : []);
 
   if (resolvedItems.length === 0) {
     return (
@@ -48,23 +114,29 @@ export function RecommendationList({ items, onPressItem }: Props) {
         <View style={styles.emptyIconCircle}>
           <Feather name="book-open" size={24} color={brand.cyan} />
         </View>
-        <Text style={styles.emptyTitle}>No recommendations yet</Text>
-        <Text style={styles.emptyText}>
-          Analyze your resume to get recommendations tailored to your skill gaps.
+        <Text style={styles.emptyTitle}>
+          {analysis ? "No course links available yet" : "No recommendations yet"}
         </Text>
-        <Pressable
-          onPress={() => router.push("/resume-upload")}
-          style={({ pressed }) => [styles.emptyButtonWrap, pressed && { opacity: 0.85 }]}
-        >
-          <LinearGradient
-            colors={[brand.cyan, brand.mint]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.emptyButton}
+        <Text style={styles.emptyText}>
+          {analysis
+            ? "We don't have a curated enrollment link for these skill gaps yet."
+            : "Analyze your resume to get recommendations tailored to your skill gaps."}
+        </Text>
+        {!analysis && (
+          <Pressable
+            onPress={() => router.push("/resume-upload")}
+            style={({ pressed }) => [styles.emptyButtonWrap, pressed && { opacity: 0.85 }]}
           >
-            <Text style={styles.emptyButtonText}>Upload your resume</Text>
-          </LinearGradient>
-        </Pressable>
+            <LinearGradient
+              colors={[brand.cyan, brand.mint]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.emptyButton}
+            >
+              <Text style={styles.emptyButtonText}>Upload your resume</Text>
+            </LinearGradient>
+          </Pressable>
+        )}
       </View>
     );
   }
@@ -74,8 +146,9 @@ export function RecommendationList({ items, onPressItem }: Props) {
       {resolvedItems.map((item) => (
         <Pressable
           key={item.id}
-          onPress={() => onPressItem?.(item)}
+          onPress={() => onPressItem ? onPressItem(item) : openCourse(item.url)}
           accessibilityRole="button"
+          accessibilityLabel={`${item.title}. View course and enroll.`}
           style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]}
         >
           <View style={styles.topRow}>
@@ -86,20 +159,11 @@ export function RecommendationList({ items, onPressItem }: Props) {
           </View>
 
           <Text style={styles.title}>{item.title}</Text>
-          <Text style={styles.meta}>
-            {item.provider}, {item.duration}
-          </Text>
+          <Text style={styles.meta}>{item.provider}</Text>
 
-          <View style={styles.matchRow}>
-            <View style={styles.track}>
-              <LinearGradient
-                colors={[brand.cyan, brand.mint]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={[styles.fill, { width: `${item.match}%` }]}
-              />
-            </View>
-            <Text style={styles.matchText}>{item.match}% match</Text>
+          <View style={styles.courseLink}>
+            <Text style={styles.courseLinkText}>View course & enroll</Text>
+            <Feather name="external-link" size={15} color={brand.cyan} />
           </View>
         </Pressable>
       ))}
@@ -121,10 +185,8 @@ const styles = StyleSheet.create({
   pillText: { fontSize: 13, fontWeight: "600", color: brand.cyan },
   title: { fontSize: 18, fontWeight: "700", color: brand.text, marginBottom: 4 },
   meta: { fontSize: 14, color: brand.muted, marginBottom: 16 },
-  matchRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  track: { flex: 1, height: 4, borderRadius: 2, backgroundColor: brand.border, overflow: "hidden" },
-  fill: { height: 4, borderRadius: 2 },
-  matchText: { fontSize: 13, fontWeight: "600", color: brand.text },
+  courseLink: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 16 },
+  courseLinkText: { fontSize: 14, fontWeight: "700", color: brand.cyan },
   empty: { alignItems: "center", paddingVertical: 48, paddingHorizontal: 16 },
   emptyIconCircle: {
     width: 56,
