@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import {
   ActivityIndicator,
   Alert,
@@ -142,14 +143,20 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.root} edges={["top"]}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <View style={styles.header}>
-          <Text style={styles.title}>Settings</Text>
-          <Text style={styles.subtitle}>Manage your account and revisit previous resume analyses.</Text>
-        </View>
+    <View style={styles.root}>
+      <LinearGradient
+        colors={[brand.tint, "transparent"]}
+        style={styles.glow}
+        pointerEvents="none"
+      />
+      <SafeAreaView style={styles.safeArea} edges={["top"]}>
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <View style={styles.header}>
+            <Text style={styles.title}>Settings</Text>
+            <Text style={styles.subtitle}>Manage your account and revisit previous resume analyses.</Text>
+          </View>
 
-        <View style={styles.section}>
+          <View style={styles.section}>
           <View style={styles.sectionHeading}>
             <Feather name="user" size={18} color={brand.cyan} />
             <Text style={styles.sectionTitle}>Account</Text>
@@ -194,9 +201,9 @@ export default function SettingsScreen() {
               </Pressable>
             </>
           )}
-        </View>
+          </View>
 
-        <View style={styles.section}>
+          <View style={styles.section}>
           <View style={styles.sectionHeading}>
             <Feather name="lock" size={18} color={brand.cyan} />
             <Text style={styles.sectionTitle}>Reset password</Text>
@@ -235,9 +242,9 @@ export default function SettingsScreen() {
               <Text style={styles.secondaryButtonText}>Update password</Text>
             )}
           </Pressable>
-        </View>
+          </View>
 
-        <View style={styles.historySection}>
+          <View style={styles.historySection}>
           <View style={styles.sectionHeading}>
             <Feather name="clock" size={18} color={brand.cyan} />
             <Text style={styles.sectionTitle}>Analysis history</Text>
@@ -318,14 +325,17 @@ export default function SettingsScreen() {
               );
             })
           )}
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: brand.bg },
+  safeArea: { flex: 1 },
+  glow: { position: "absolute", top: 0, left: 0, right: 0, height: 280 },
   content: { padding: 16, paddingBottom: 36 },
   header: { marginTop: 16, marginBottom: 20 },
   title: { fontFamily: SERIF, color: brand.text, fontSize: 28, textAlign: "center" },

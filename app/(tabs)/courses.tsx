@@ -30,7 +30,7 @@ export default function RecommendationsScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: brand.bg },
   safeArea: { flex: 1 },
-  glow: { position: "absolute", top: 0, left: 0, right: 0, height: 320 },
+  glow: { position: "absolute", top: 0, left: 0, right: 0, height: 280 },
   container: { padding: 16, paddingBottom: 40 },
   header: { marginTop: 16, marginBottom: 24 },
   title: {

@@ -329,8 +329,14 @@ const styles = StyleSheet.create({
   warningText: { color: brand.muted, fontSize: 13, lineHeight: 19 },
 
   buttonWrap: { marginTop: 28, borderRadius: 999, overflow: "hidden" },
-  button: { height: 50, alignItems: "center", justifyContent: "center" },
-  buttonText: { color: brand.onGradient, fontSize: 15, fontWeight: "700" },
+  button: {
+    minHeight: 58,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  buttonText: { color: brand.onGradient, fontSize: 16, fontWeight: "700" },
 
   emptyContainer: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 32 },
   emptyIconCircle: {
