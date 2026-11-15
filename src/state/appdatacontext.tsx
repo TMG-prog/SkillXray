@@ -40,6 +40,7 @@ export interface AnalysisMarketInsights {
     frequency: number | null;
     readinessGainPoints: number;
     evidence: string;
+    hiringEvidence: string | null;
   }>;
   emergingSkills: Array<{
     uri: string;
@@ -49,13 +50,55 @@ export interface AnalysisMarketInsights {
     currentFrequency: number;
     deltaPp: number;
     emergenceScore: number;
-    status: "rising" | "stable" | "declining";
+    status: "core" | "rising" | "stable" | "declining";
+    escoUri?: string | null;
+    isEsco?: boolean;
+    recentCount?: number;
+    baselineCount?: number;
+    recentPostings?: number;
+    baselinePostings?: number;
+    firstSeen?: boolean;
+    confidence?: "low" | "medium" | "high";
+    evidence?: string;
+    samplePostings?: Array<{ title: string; postedAt: string; publisher: string }>;
   }>;
   currentPostings: number;
   previousPostings: number;
   emergingRole: string;
+  recentWindowDays?: number;
+  baselineWindowDays?: number;
+  recentWindowStart?: string;
+  recentWindowEnd?: string;
+  baselineWindowStart?: string;
+  baselineWindowEnd?: string;
+  minimumSkillSupport?: number;
+  minimumRecentPostings?: number;
+  minimumBaselinePostings?: number;
+  trendDataSufficient?: boolean;
   highRoiNote: string;
   emergingNote: string;
+}
+
+export interface AnalysisHiringEvidence {
+  sampleSize: number;
+  postingCount: number;
+  frequency: number | null;
+  baselineFrequency: number | null;
+  personalized: boolean;
+  evidence: string;
+}
+
+export interface AnalysisLearningPlanStep {
+  rank: number;
+  skill: string;
+  uri: string;
+  marginalGainPoints: number;
+  clusterGainPoints: number;
+  prerequisites: string[];
+  clusterSkills: string[];
+  coveredBy: string | null;
+  hiringEvidence: AnalysisHiringEvidence | null;
+  resource: { title: string; provider: string; url: string };
 }
 
 export interface AnalysisSkillRelationship {
@@ -72,6 +115,7 @@ export interface Analysis {
   gaps: SkillGap[];
   covered: string[];
   requirements: AnalysisRequirement[];
+  learningPlan?: AnalysisLearningPlanStep[];
   extractedSkills?: AnalysisExtractedSkill[];
   relationships: AnalysisSkillRelationship[];
   marketInsights: AnalysisMarketInsights;

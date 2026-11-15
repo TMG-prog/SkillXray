@@ -104,7 +104,7 @@ export default function HomeScreen() {
                 <Text style={styles.signOut}>Sign out</Text>
               </Pressable>
             </View>
-            <Text style={styles.title}>Let's build your career together.</Text>
+            <Text style={styles.title}>See how your skills compare to the current job market.</Text>
           </View>
 
           {/* Target Role Selection Section */}

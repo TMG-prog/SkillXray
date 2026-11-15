@@ -81,24 +81,38 @@ export function AnalysisVisualizations({
 
       {view === "market" && <>
         <View style={styles.card}>
-          <Text style={styles.title}>Emerging this month</Text>
+          <Text style={styles.title}>Skill trend signals</Text>
           <Text style={styles.description}>
-            Check whether your skills are getting stale.{"\n"}
-            🔥 Rising in {marketInsights.emergingRole || "target"} roles (last 30 days)
+            Dated posting comparisons for {marketInsights.emergingRole || "target"} roles: the last{" "}
+            {marketInsights.recentWindowDays ?? 90} days versus the preceding{" "}
+            {marketInsights.baselineWindowDays ?? 275} days.
           </Text>
           {emergingSkills.length ? (
             <>
               <Text style={styles.footnote}>
-                Previous 30-day window: {previousPostings} postings · Latest: {currentPostings} postings.
+                Recent: {currentPostings} postings
+                {marketInsights.recentWindowStart && marketInsights.recentWindowEnd
+                  ? ` (${marketInsights.recentWindowStart}–${marketInsights.recentWindowEnd})`
+                  : ""} · Baseline: {previousPostings} postings
+                {marketInsights.baselineWindowStart && marketInsights.baselineWindowEnd
+                  ? ` (${marketInsights.baselineWindowStart}–${marketInsights.baselineWindowEnd})`
+                  : ""}.
+              </Text>
+              <Text style={styles.footnote}>
+                Minimum support: {marketInsights.minimumSkillSupport ?? 5} postings per skill; comparisons require{" "}
+                {marketInsights.minimumRecentPostings ?? 10} recent and{" "}
+                {marketInsights.minimumBaselinePostings ?? 20} baseline postings.
               </Text>
               <View style={styles.emergenceList}>
                 {emergingSkills.map((item) => {
-                  const movement = item.status === "rising"
+                  const movement = item.status === "core"
+                    ? `core · ${formatPercentage(item.currentFrequency)}`
+                    : item.status === "rising"
                     ? `up ${formatPercentage(item.previousFrequency)} → ${formatPercentage(item.currentFrequency)}`
                     : item.status === "declining"
                       ? `down ${formatPercentage(item.previousFrequency)} → ${formatPercentage(item.currentFrequency)}`
                       : `stable at ${formatPercentage(item.currentFrequency)}`;
-                  const color = item.status === "rising"
+                  const color = item.status === "core" || item.status === "rising"
                     ? "#15803D"
                     : item.status === "declining"
                       ? "#B45353"
@@ -108,6 +122,19 @@ export function AnalysisVisualizations({
                       <View style={styles.emergenceSkill}>
                         <Text style={styles.relationshipSkill} numberOfLines={2}>{item.skill}</Text>
                         <Text style={[styles.emergenceMovement, { color }]}>{movement}</Text>
+                        {item.isEsco === false ? (
+                          <Text style={styles.footnote}>
+                            Unmapped term{item.firstSeen ? " · first seen in the recent window" : ""}
+                          </Text>
+                        ) : null}
+                        {item.evidence ? (
+                          <Text style={styles.footnote}>{item.evidence} Confidence: {item.confidence ?? "unknown"}.</Text>
+                        ) : null}
+                        {item.samplePostings?.map((sample, index) => (
+                          <Text key={`${item.uri}-${sample.postedAt}-${index}`} style={styles.footnote}>
+                            Example: {sample.title} · {sample.postedAt}{sample.publisher ? ` · ${sample.publisher}` : ""}
+                          </Text>
+                        ))}
                       </View>
                       <Sparkline history={item.history} status={item.status} skill={item.skill} />
                     </View>
@@ -117,9 +144,9 @@ export function AnalysisVisualizations({
             </>
           ) : (
             <Text style={styles.emptyText}>
-              {currentPostings && previousPostings
-                ? "No notable skill-demand shifts were detected in the sampled postings."
-                : "Trend data needs postings in both 30-day windows for this role."}
+              {marketInsights.trendDataSufficient
+                ? "No skill met the minimum support for a trend classification in the sampled postings."
+                : `Trend data requires at least 10 recent and 20 baseline postings; current sample: ${currentPostings} recent and ${previousPostings} baseline.`}
             </Text>
           )}
           {marketInsights.emergingNote ? <Text style={styles.footnote}>{marketInsights.emergingNote}</Text> : null}
@@ -183,6 +210,9 @@ export function AnalysisVisualizations({
                   {" · "}
                   up to +{gap.readinessGainPoints} readiness points
                 </Text>
+                {gap.hiringEvidence ? (
+                  <Text style={styles.footnote}>Hiring evidence: {gap.hiringEvidence}</Text>
+                ) : null}
                 {gap.evidence ? <Text style={styles.footnote}>Resume evidence: {gap.evidence}</Text> : null}
               </View>
             ))}
@@ -247,7 +277,7 @@ function Sparkline({
   skill,
 }: {
   history: number[];
-  status: "rising" | "stable" | "declining";
+  status: "core" | "rising" | "stable" | "declining";
   skill: string;
 }) {
   const width = 64;
@@ -263,7 +293,9 @@ function Sparkline({
       : height / 2;
     return `${x},${y}`;
   });
-  const color = status === "rising" ? "#15803D" : status === "declining" ? "#B45353" : brand.muted;
+  const color = status === "core" || status === "rising"
+    ? "#15803D"
+    : status === "declining" ? "#B45353" : brand.muted;
 
   return (
     <View accessibilityRole="image" accessibilityLabel={`${skill} demand trend`}>

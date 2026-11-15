@@ -105,7 +105,27 @@ function isAnalysis(value: unknown): value is Analysis {
     && Array.isArray(value.requirements)
     && Array.isArray(value.relationships)
     && isRecord(value.marketInsights)
+    && (value.learningPlan === undefined
+      || (Array.isArray(value.learningPlan) && value.learningPlan.every(isLearningPlanStep)))
     && Array.isArray(value.warnings);
+}
+
+function isLearningPlanStep(value: unknown): boolean {
+  if (!isRecord(value) || !isRecord(value.resource)) return false;
+  return typeof value.rank === "number"
+    && typeof value.skill === "string"
+    && typeof value.uri === "string"
+    && typeof value.marginalGainPoints === "number"
+    && typeof value.clusterGainPoints === "number"
+    && Array.isArray(value.prerequisites)
+    && value.prerequisites.every((skill) => typeof skill === "string")
+    && Array.isArray(value.clusterSkills)
+    && value.clusterSkills.every((skill) => typeof skill === "string")
+    && (value.coveredBy === null || typeof value.coveredBy === "string")
+    && (value.hiringEvidence === null || isRecord(value.hiringEvidence))
+    && typeof value.resource.title === "string"
+    && typeof value.resource.provider === "string"
+    && typeof value.resource.url === "string";
 }
 
 function unavailableAnalysis(row: AnalysisRow, fileUrl?: string, roleTitle?: string): Analysis {
@@ -118,6 +138,7 @@ function unavailableAnalysis(row: AnalysisRow, fileUrl?: string, roleTitle?: str
     gaps: [],
     covered: [],
     requirements: [],
+    learningPlan: [],
     relationships: [],
     marketInsights: {
       highRoiGaps: [],

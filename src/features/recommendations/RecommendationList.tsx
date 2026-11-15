@@ -11,80 +11,24 @@ export type Recommendation = {
   provider: string;
   url: string;
   skill: string; // the gap this closes
+  rank?: number;
+  marginalGainPoints?: number;
+  clusterGainPoints?: number;
+  prerequisites?: string[];
+  clusterSkills?: string[];
+  coveredBy?: string | null;
+  hiringEvidence?: string;
 };
 
-const COURSES = [
-  {
-    id: "python-for-everybody",
-    title: "Python for Everybody Specialization",
-    provider: "Coursera · University of Michigan",
-    url: "https://www.coursera.org/specializations/python",
-    matches: ["python"],
-  },
-  {
-    id: "sql-for-data-science",
-    title: "SQL for Data Science",
-    provider: "Coursera · University of California, Davis",
-    url: "https://www.coursera.org/learn/sql-for-data-science",
-    matches: ["sql", "database"],
-  },
-  {
-    id: "google-data-analytics",
-    title: "Google Data Analytics Professional Certificate",
-    provider: "Coursera · Google",
-    url: "https://www.coursera.org/professional-certificates/google-data-analytics",
-    matches: ["data analytics", "data analyst", "statistics", "power bi", "tableau", "spreadsheets", "business intelligence"],
-  },
-  {
-    id: "machine-learning-specialization",
-    title: "Machine Learning Specialization",
-    provider: "Coursera · DeepLearning.AI and Stanford",
-    url: "https://www.coursera.org/specializations/machine-learning-introduction",
-    matches: ["machine learning", "artificial intelligence", "data science", "computer vision", "deep learning"],
-  },
-  {
-    id: "google-project-management",
-    title: "Google Project Management Professional Certificate",
-    provider: "Coursera · Google",
-    url: "https://www.coursera.org/professional-certificates/google-project-management",
-    matches: ["project management", "project manager", "project commissioning"],
-  },
-  {
-    id: "google-it-support",
-    title: "Google IT Support Professional Certificate",
-    provider: "Coursera · Google",
-    url: "https://www.coursera.org/professional-certificates/google-it-support",
-    matches: ["it support", "troubleshoot", "operating systems", "computer technology", "technical support"],
-  },
-  {
-    id: "java-programming",
-    title: "Java Programming and Software Engineering Fundamentals",
-    provider: "Coursera · Duke University",
-    url: "https://www.coursera.org/specializations/java-programming",
-    matches: ["java"],
-  },
-];
-
 function buildRecommendations(gapSkills: string[]): Recommendation[] {
-  const recommendations = new Map<string, Recommendation>();
-
-  for (const skill of gapSkills) {
-    const normalized = skill.toLowerCase();
-    const course = COURSES.find(({ matches }) =>
-      matches.some((match) => normalized.includes(match)),
-    );
-    if (!course || recommendations.has(course.id)) continue;
-
-    recommendations.set(course.id, {
-      id: course.id,
-      title: course.title,
-      provider: course.provider,
-      url: course.url,
-      skill,
-    });
-  }
-
-  return [...recommendations.values()];
+  return gapSkills.map((skill, index) => ({
+    id: `course-search-${index}-${skill}`,
+    title: `Find courses for ${skill}`,
+    provider: "Coursera course search",
+    url: `https://www.coursera.org/search?query=${encodeURIComponent(skill)}`,
+    skill,
+    rank: index + 1,
+  }));
 }
 
 async function openCourse(url: string) {
@@ -106,7 +50,22 @@ export function RecommendationList({ items, onPressItem }: Props) {
   const { analysis } = useAppData();
 
   const resolvedItems =
-    items ?? (analysis ? buildRecommendations(analysis.gaps.map((g) => g.skill)) : []);
+    items ?? (analysis?.learningPlan?.length
+      ? analysis.learningPlan.map((step) => ({
+        id: step.uri,
+        title: step.resource.title,
+        provider: step.resource.provider,
+        url: step.resource.url,
+        skill: step.skill,
+        rank: step.rank,
+        marginalGainPoints: step.marginalGainPoints,
+        clusterGainPoints: step.clusterGainPoints,
+        prerequisites: step.prerequisites,
+        clusterSkills: step.clusterSkills,
+        coveredBy: step.coveredBy,
+        hiringEvidence: step.hiringEvidence?.evidence,
+      }))
+      : analysis ? buildRecommendations(analysis.gaps.map((g) => g.skill)) : []);
 
   if (resolvedItems.length === 0) {
     return (
@@ -152,14 +111,45 @@ export function RecommendationList({ items, onPressItem }: Props) {
           style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]}
         >
           <View style={styles.topRow}>
-            <View style={styles.pill}>
-              <Text style={styles.pillText}>{item.skill}</Text>
+            <View style={styles.pillRow}>
+              {item.rank !== undefined && (
+                <View style={styles.pill}>
+                  <Text style={styles.pillText}>Step {item.rank}</Text>
+                </View>
+              )}
+              <View style={styles.pill}>
+                <Text style={styles.pillText}>{item.skill}</Text>
+              </View>
             </View>
             <Feather name="arrow-up-right" size={18} color={brand.muted} />
           </View>
 
           <Text style={styles.title}>{item.title}</Text>
           <Text style={styles.meta}>{item.provider}</Text>
+          {item.marginalGainPoints !== undefined && (
+            <Text style={styles.evidence}>
+              Up to +{item.marginalGainPoints.toFixed(1)} CRI points when learned.
+            </Text>
+          )}
+          {item.clusterGainPoints !== undefined
+            && item.marginalGainPoints !== undefined
+            && item.clusterGainPoints > item.marginalGainPoints && (
+              <Text style={styles.evidence}>
+                Related-skill cluster: up to +{item.clusterGainPoints.toFixed(1)} CRI points across the listed cluster.
+              </Text>
+            )}
+          {item.prerequisites && item.prerequisites.length > 0 && (
+            <Text style={styles.evidence}>Learn after: {item.prerequisites.join(", ")}</Text>
+          )}
+          {item.clusterSkills && item.clusterSkills.length > 0 && (
+            <Text style={styles.evidence}>Related skill cluster: {item.clusterSkills.join(", ")}</Text>
+          )}
+          {item.coveredBy && (
+            <Text style={styles.evidence}>This requirement is also addressed by learning {item.coveredBy}.</Text>
+          )}
+          {item.hiringEvidence && (
+            <Text style={styles.evidence}>Hiring evidence: {item.hiringEvidence}</Text>
+          )}
 
           <View style={styles.courseLink}>
             <Text style={styles.courseLinkText}>View course & enroll</Text>
@@ -181,10 +171,12 @@ const styles = StyleSheet.create({
     padding: 18,
   },
   topRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
+  pillRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   pill: { backgroundColor: brand.tint, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
   pillText: { fontSize: 13, fontWeight: "600", color: brand.cyan },
   title: { fontSize: 18, fontWeight: "700", color: brand.text, marginBottom: 4 },
   meta: { fontSize: 14, color: brand.muted, marginBottom: 16 },
+  evidence: { fontSize: 12, lineHeight: 17, color: brand.muted, marginTop: 4 },
   courseLink: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 16 },
   courseLinkText: { fontSize: 14, fontWeight: "700", color: brand.cyan },
   empty: { alignItems: "center", paddingVertical: 48, paddingHorizontal: 16 },

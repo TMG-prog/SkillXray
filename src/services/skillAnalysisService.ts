@@ -16,6 +16,7 @@ export interface PipelineAnalysis {
   covered: PipelineSkill[];
   gaps: PipelineSkill[];
   skill_relationships: SkillRelationship[];
+  learning_plan: PipelineLearningPlanStep[];
   extracted_skills: Array<{ skill: string; uri: string; in_esco: boolean; mentions: number }>;
   warnings: string[];
   timings_ms: { extract: number; link: number; match: number };
@@ -25,21 +26,42 @@ export interface PipelineAnalysis {
 
 export interface PipelineMarketEmergence {
   role: string;
-  period_days: number;
+  country: string | null;
+  recent_window_days: number;
+  baseline_window_days: number;
+  recent_window_start: string;
+  recent_window_end: string;
+  baseline_window_start: string;
+  baseline_window_end: string;
+  minimum_skill_support: number;
+  minimum_recent_postings: number;
+  minimum_baseline_postings: number;
+  data_sufficient: boolean;
   current_postings: number;
   previous_postings: number;
   skills: PipelineEmergingSkill[];
 }
 
 export interface PipelineEmergingSkill {
-  esco_uri: string;
+  skill_id: string;
+  esco_uri: string | null;
   skill: string;
+  is_esco: boolean;
   history: number[];
   previous_frequency: number;
   current_frequency: number;
   delta_pp: number;
+  growth_rate: number;
   emergence_score: number;
-  status: "rising" | "stable" | "declining";
+  status: "core" | "rising" | "stable" | "declining";
+  recent_count: number;
+  baseline_count: number;
+  recent_postings: number;
+  baseline_postings: number;
+  first_seen: boolean;
+  confidence: "low" | "medium" | "high";
+  evidence: string;
+  sample_postings: Array<{ title: string; posted_at: string; publisher: string }>;
 }
 
 export interface PipelineSkill {
@@ -61,10 +83,33 @@ export interface PipelineMarketDelta {
     frequency: number | null;
     readiness_gain_pp: number;
     evidence: string;
+    hiring_evidence: string | null;
   }>;
   high_roi_note: string;
   emerging: null;
   emerging_note: string;
+}
+
+export interface PipelineLearningPlanStep {
+  rank: number;
+  skill: string;
+  uri: string;
+  marginal_gain_pp: number;
+  cluster_gain_pp: number;
+  prerequisites: string[];
+  cluster_skills: string[];
+  covered_by: string | null;
+  hiring_evidence: PipelineHiringEvidence | null;
+  resource: { title: string; provider: string; url: string };
+}
+
+export interface PipelineHiringEvidence {
+  sample_size: number;
+  posting_count: number;
+  frequency: number | null;
+  baseline_frequency: number | null;
+  personalized: boolean;
+  evidence: string;
 }
 
 export interface SkillRelationship {
@@ -230,6 +275,40 @@ function createMockAnalysis(role: string): PipelineAnalysis {
       { source: "Data analysis", target: "Machine learning", type: "related" },
       { source: "Cloud computing", target: "Machine learning", type: "broader" },
     ],
+    learning_plan: [
+      {
+        rank: 1,
+        skill: "Cloud computing",
+        uri: "demo:cloud",
+        marginal_gain_pp: 20,
+        cluster_gain_pp: 20,
+        prerequisites: [],
+        cluster_skills: ["Machine learning"],
+        covered_by: null,
+        hiring_evidence: null,
+        resource: {
+          title: "AWS Cloud Practitioner Essentials",
+          provider: "AWS Skill Builder",
+          url: "https://skillbuilder.aws/learn",
+        },
+      },
+      {
+        rank: 2,
+        skill: "Machine learning",
+        uri: "demo:machine-learning",
+        marginal_gain_pp: 20,
+        cluster_gain_pp: 20,
+        prerequisites: [],
+        cluster_skills: ["Cloud computing"],
+        covered_by: null,
+        hiring_evidence: null,
+        resource: {
+          title: "Machine Learning Specialization",
+          provider: "Coursera · DeepLearning.AI and Stanford",
+          url: "https://www.coursera.org/specializations/machine-learning-introduction",
+        },
+      },
+    ],
     extracted_skills: covered.map(({ skill, uri }) => ({
       skill, uri, in_esco: true, mentions: 1,
     })),
@@ -273,21 +352,47 @@ function isPipelineAnalysis(value: unknown): value is PipelineAnalysis {
     || !Array.isArray(marketDelta.high_roi_gaps)) return false;
   const isEmergingSkill = (item: unknown) =>
     isRecord(item)
-    && typeof item.esco_uri === "string"
+    && typeof item.skill_id === "string"
+    && (item.esco_uri === null || typeof item.esco_uri === "string")
     && typeof item.skill === "string"
+    && typeof item.is_esco === "boolean"
     && Array.isArray(item.history)
-    && item.history.length === 4
+    && item.history.length === 2
     && item.history.every((point) => typeof point === "number")
     && typeof item.previous_frequency === "number"
     && typeof item.current_frequency === "number"
     && typeof item.delta_pp === "number"
+    && typeof item.growth_rate === "number"
     && typeof item.emergence_score === "number"
-    && (item.status === "rising" || item.status === "stable" || item.status === "declining");
+    && (item.status === "core" || item.status === "rising" || item.status === "stable" || item.status === "declining")
+    && typeof item.recent_count === "number"
+    && typeof item.baseline_count === "number"
+    && typeof item.recent_postings === "number"
+    && typeof item.baseline_postings === "number"
+    && typeof item.first_seen === "boolean"
+    && (item.confidence === "low" || item.confidence === "medium" || item.confidence === "high")
+    && typeof item.evidence === "string"
+    && Array.isArray(item.sample_postings)
+    && item.sample_postings.every((sample) =>
+      isRecord(sample)
+      && typeof sample.title === "string"
+      && typeof sample.posted_at === "string"
+      && typeof sample.publisher === "string");
   const marketEmergence = value.market_emergence;
   if (marketEmergence !== undefined && marketEmergence !== null
     && (!isRecord(marketEmergence)
       || typeof marketEmergence.role !== "string"
-      || marketEmergence.period_days !== 30
+      || !(marketEmergence.country === null || typeof marketEmergence.country === "string")
+      || typeof marketEmergence.recent_window_days !== "number"
+      || typeof marketEmergence.baseline_window_days !== "number"
+      || typeof marketEmergence.recent_window_start !== "string"
+      || typeof marketEmergence.recent_window_end !== "string"
+      || typeof marketEmergence.baseline_window_start !== "string"
+      || typeof marketEmergence.baseline_window_end !== "string"
+      || typeof marketEmergence.minimum_skill_support !== "number"
+      || typeof marketEmergence.minimum_recent_postings !== "number"
+      || typeof marketEmergence.minimum_baseline_postings !== "number"
+      || typeof marketEmergence.data_sufficient !== "boolean"
       || typeof marketEmergence.current_postings !== "number"
       || typeof marketEmergence.previous_postings !== "number"
       || !Array.isArray(marketEmergence.skills)
@@ -309,7 +414,33 @@ function isPipelineAnalysis(value: unknown): value is PipelineAnalysis {
     && typeof item.skill === "string"
     && (item.frequency === null || typeof item.frequency === "number")
     && typeof item.readiness_gain_pp === "number"
+    && typeof item.evidence === "string"
+    && (item.hiring_evidence === null || typeof item.hiring_evidence === "string");
+  const isHiringEvidence = (item: unknown) =>
+    isRecord(item)
+    && typeof item.sample_size === "number"
+    && typeof item.posting_count === "number"
+    && (item.frequency === null || typeof item.frequency === "number")
+    && (item.baseline_frequency === null || typeof item.baseline_frequency === "number")
+    && typeof item.personalized === "boolean"
     && typeof item.evidence === "string";
+  const isLearningPlanStep = (item: unknown) =>
+    isRecord(item)
+    && typeof item.rank === "number"
+    && typeof item.skill === "string"
+    && typeof item.uri === "string"
+    && typeof item.marginal_gain_pp === "number"
+    && typeof item.cluster_gain_pp === "number"
+    && Array.isArray(item.prerequisites)
+    && item.prerequisites.every((skill) => typeof skill === "string")
+    && Array.isArray(item.cluster_skills)
+    && item.cluster_skills.every((skill) => typeof skill === "string")
+    && (item.covered_by === null || typeof item.covered_by === "string")
+    && (item.hiring_evidence === null || isHiringEvidence(item.hiring_evidence))
+    && isRecord(item.resource)
+    && typeof item.resource.title === "string"
+    && typeof item.resource.provider === "string"
+    && typeof item.resource.url === "string";
   const isRelationship = (item: unknown) =>
     isRecord(item)
     && typeof item.source === "string"
@@ -333,6 +464,7 @@ function isPipelineAnalysis(value: unknown): value is PipelineAnalysis {
     && Array.isArray(result.covered) && result.covered.every(isCoveredSkill)
     && Array.isArray(result.gaps) && result.gaps.every(isCoveredSkill)
     && Array.isArray(result.skill_relationships) && result.skill_relationships.every(isRelationship)
+    && Array.isArray(result.learning_plan) && result.learning_plan.every(isLearningPlanStep)
     && Array.isArray(result.extracted_skills) && result.extracted_skills.every(isExtractedSkill)
     && Array.isArray(result.warnings) && result.warnings.every((warning) => typeof warning === "string")
     && marketDelta.high_roi_gaps.every(isHighRoiGap)
