@@ -22,7 +22,16 @@ export interface AnalysisRequirement {
   frequency: number | null;
   reason?: string;
   evidence?: string;
+  cv_evidence?: string;
+  cv_highlight?: string;
   gap_confidence?: number;
+}
+
+export interface AnalysisExtractedSkill {
+  skill: string;
+  uri: string;
+  in_esco: boolean;
+  mentions: number;
 }
 
 export interface AnalysisMarketInsights {
@@ -32,6 +41,19 @@ export interface AnalysisMarketInsights {
     readinessGainPoints: number;
     evidence: string;
   }>;
+  emergingSkills: Array<{
+    uri: string;
+    skill: string;
+    history: number[];
+    previousFrequency: number;
+    currentFrequency: number;
+    deltaPp: number;
+    emergenceScore: number;
+    status: "rising" | "stable" | "declining";
+  }>;
+  currentPostings: number;
+  previousPostings: number;
+  emergingRole: string;
   highRoiNote: string;
   emergingNote: string;
 }
@@ -50,6 +72,7 @@ export interface Analysis {
   gaps: SkillGap[];
   covered: string[];
   requirements: AnalysisRequirement[];
+  extractedSkills?: AnalysisExtractedSkill[];
   relationships: AnalysisSkillRelationship[];
   marketInsights: AnalysisMarketInsights;
   warnings: string[];

@@ -8,6 +8,7 @@ import { Feather } from "@expo/vector-icons";
 import { useAppData } from "@/state/appdatacontext";
 import { brand, colors, SERIF } from "@/components/ui/theme";
 import { AnalysisVisualizations } from "@/features/skill-analysis/AnalysisVisualizations";
+import { CareerPivotSimulator } from "@/features/skill-analysis/CareerPivotSimulator";
 
 type Severity = "high" | "medium" | "low";
 
@@ -17,12 +18,13 @@ const SEVERITY: Record<Severity, { label: string; color: string }> = {
   low: { label: "Low", color: colors.dark.severityLow },
 };
 
-type AnalysisTab = "readiness" | "skills" | "market" | "pathways";
+type AnalysisTab = "readiness" | "skills" | "market" | "pathways" | "pivot";
 const ANALYSIS_TABS: { id: AnalysisTab; label: string; icon: keyof typeof Feather.glyphMap }[] = [
   { id: "readiness", label: "Readiness", icon: "activity" },
   { id: "skills", label: "Skills", icon: "list" },
-  { id: "market", label: "Market", icon: "bar-chart-2" },
+  { id: "market", label: "Market", icon: "trending-up" },
   { id: "pathways", label: "Pathways", icon: "git-branch" },
+  { id: "pivot", label: "Career pivot", icon: "shuffle" },
 ];
 
 export default function AnalysisScreen() {
@@ -202,6 +204,31 @@ export default function AnalysisScreen() {
                   </View>
                 )) : <Text style={styles.emptyCovered}>No required skills matched this resume.</Text>}
               </View>
+              {analysis.covered.length > 0 && (
+                <View style={styles.evidenceSection}>
+                  <Text style={styles.sectionTitle}>Evidence from your CV</Text>
+                  {analysis.covered.map((skill) => {
+                    const requirement = analysis.requirements.find((item) => item.skill === skill);
+                    return (
+                      <View key={skill} style={styles.evidenceCard}>
+                        <Text style={styles.evidenceSkill}>{skill}</Text>
+                        {requirement?.cv_evidence ? (
+                          <HighlightedEvidence
+                            snippet={requirement.cv_evidence}
+                            highlight={requirement.cv_highlight ?? ""}
+                          />
+                        ) : (
+                          <Text style={styles.evidenceUnavailable}>
+                            {analysis.demo
+                              ? "Demo results do not include excerpts from a CV."
+                              : "CV excerpt unavailable for this saved analysis."}
+                          </Text>
+                        )}
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
               {analysis.warnings.length > 0 && (
                 <View style={styles.warningCard}>
                   {analysis.warnings.map((warning) => (
@@ -226,15 +253,25 @@ export default function AnalysisScreen() {
             </>
           )}
 
-          {(activeTab === "market" || activeTab === "pathways") && (
+          {activeTab === "pathways" && (
             <AnalysisVisualizations
-              view={activeTab}
+              view="pathways"
               requirements={analysis.requirements}
               relationships={analysis.relationships}
               covered={analysis.covered}
               marketInsights={analysis.marketInsights}
             />
           )}
+          {activeTab === "market" && (
+            <AnalysisVisualizations
+              view="market"
+              requirements={analysis.requirements}
+              relationships={analysis.relationships}
+              covered={analysis.covered}
+              marketInsights={analysis.marketInsights}
+            />
+          )}
+          {activeTab === "pivot" && <CareerPivotSimulator analysis={analysis} />}
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -316,6 +353,23 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   coveredText: { color: brand.text, fontSize: 13, fontWeight: "600" },
+  evidenceSection: { marginTop: 24, gap: 10 },
+  evidenceCard: {
+    backgroundColor: brand.surface,
+    borderWidth: 1,
+    borderColor: brand.border,
+    borderRadius: 14,
+    padding: 14,
+    gap: 8,
+  },
+  evidenceSkill: { color: brand.text, fontSize: 14, fontWeight: "700" },
+  evidenceSnippet: { color: brand.muted, fontSize: 14, lineHeight: 21 },
+  evidenceHighlight: {
+    color: brand.text,
+    backgroundColor: "rgba(37,217,208,0.28)",
+    fontWeight: "700",
+  },
+  evidenceUnavailable: { color: brand.muted, fontSize: 13, lineHeight: 19 },
   emptyCovered: { color: brand.muted, fontSize: 14 },
   warningCard: {
     marginTop: 20,
@@ -351,3 +405,17 @@ const styles = StyleSheet.create({
   emptyTitle: { fontFamily: SERIF, fontSize: 24, color: brand.text, textAlign: "center", marginBottom: 10 },
   emptyMessage: { fontSize: 14, lineHeight: 20, color: brand.muted, textAlign: "center", marginBottom: 8 },
 });
+
+function HighlightedEvidence({ snippet, highlight }: { snippet: string; highlight: string }) {
+  const start = highlight ? snippet.toLocaleLowerCase().indexOf(highlight.toLocaleLowerCase()) : -1;
+  if (start < 0) return <Text style={styles.evidenceSnippet}>{snippet}</Text>;
+
+  const end = start + highlight.length;
+  return (
+    <Text style={styles.evidenceSnippet}>
+      {snippet.slice(0, start)}
+      <Text style={styles.evidenceHighlight}>{snippet.slice(start, end)}</Text>
+      {snippet.slice(end)}
+    </Text>
+  );
+}

@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
     backgroundColor: brand.tint,
     alignItems: "center", justifyContent: "center", marginBottom: 16,
   },
-  emptyTitle: { fontSize: 18, fontWeight: "700", color: brand.text, marginBottom: 6 },
+  emptyTitle: { fontFamily: SERIF, fontSize: 20, color: brand.text, marginBottom: 6 },
   emptyMessage: { fontSize: 14, color: brand.muted, textAlign: "center", marginBottom: 20, lineHeight: 20 },
   emptyButtonWrap: { borderRadius: 999, overflow: "hidden" },
   emptyButton: { borderRadius: 999, paddingVertical: 12, paddingHorizontal: 24 },

@@ -2,7 +2,7 @@ import { Alert, Linking, Pressable, StyleSheet, Text, View } from "react-native"
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { brand } from "@/components/ui/theme";
+import { brand, SERIF } from "@/components/ui/theme";
 import { useAppData } from "@/state/appdatacontext";
 
 export type Recommendation = {
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 16,
   },
-  emptyTitle: { fontSize: 18, fontWeight: "700", color: brand.text, marginBottom: 6 },
+  emptyTitle: { fontFamily: SERIF, fontSize: 20, color: brand.text, marginBottom: 6 },
   emptyText: { fontSize: 14, color: brand.muted, textAlign: "center", marginBottom: 20, lineHeight: 20 },
   emptyButtonWrap: { borderRadius: 999, overflow: "hidden" },
   emptyButton: { paddingVertical: 12, paddingHorizontal: 24, alignItems: "center" },

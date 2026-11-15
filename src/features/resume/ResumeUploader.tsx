@@ -82,6 +82,7 @@ export function ResumeUploader() {
         readiness: result.readiness,
         covered: result.covered.map((item) => item.skill),
         requirements: [...result.covered, ...result.gaps],
+        extractedSkills: result.extracted_skills,
         relationships: result.skill_relationships,
         marketInsights: {
           highRoiGaps: result.market_delta.high_roi_gaps.map((gap) => ({
@@ -90,6 +91,19 @@ export function ResumeUploader() {
             readinessGainPoints: gap.readiness_gain_pp,
             evidence: gap.evidence,
           })),
+          emergingSkills: result.market_emergence?.skills.map((skill) => ({
+            uri: skill.esco_uri,
+            skill: skill.skill,
+            history: skill.history,
+            previousFrequency: skill.previous_frequency,
+            currentFrequency: skill.current_frequency,
+            deltaPp: skill.delta_pp,
+            emergenceScore: skill.emergence_score,
+            status: skill.status,
+          })) ?? [],
+          currentPostings: result.market_emergence?.current_postings ?? 0,
+          previousPostings: result.market_emergence?.previous_postings ?? 0,
+          emergingRole: result.market_emergence?.role ?? result.role,
           highRoiNote: result.market_delta.high_roi_note,
           emergingNote: result.market_delta.emerging_note,
         },

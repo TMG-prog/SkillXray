@@ -20,6 +20,26 @@ export interface PipelineAnalysis {
   warnings: string[];
   timings_ms: { extract: number; link: number; match: number };
   market_delta: PipelineMarketDelta;
+  market_emergence?: PipelineMarketEmergence | null;
+}
+
+export interface PipelineMarketEmergence {
+  role: string;
+  period_days: number;
+  current_postings: number;
+  previous_postings: number;
+  skills: PipelineEmergingSkill[];
+}
+
+export interface PipelineEmergingSkill {
+  esco_uri: string;
+  skill: string;
+  history: number[];
+  previous_frequency: number;
+  current_frequency: number;
+  delta_pp: number;
+  emergence_score: number;
+  status: "rising" | "stable" | "declining";
 }
 
 export interface PipelineSkill {
@@ -30,6 +50,8 @@ export interface PipelineSkill {
   frequency: number | null;
   reason?: string;
   evidence?: string;
+  cv_evidence?: string;
+  cv_highlight?: string;
   gap_confidence?: number;
 }
 
@@ -49,6 +71,15 @@ export interface SkillRelationship {
   source: string;
   target: string;
   type: "prerequisite" | "broader" | "related";
+}
+
+export interface CareerPivotRole {
+  role: string;
+  requirements: Array<{
+    skill: string;
+    uri: string;
+    frequency: number | null;
+  }>;
 }
 
 interface PickedResume {
@@ -129,6 +160,43 @@ export async function getSupportedRoles(): Promise<string[]> {
   return result.posting_roles;
 }
 
+export async function getCareerPivotRoles(): Promise<CareerPivotRole[]> {
+  const apiUrl = getApiUrl();
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error("Please sign in first.");
+
+  const response = await fetch(`${apiUrl}/career-paths`, {
+    headers: { Authorization: `Bearer ${session.access_token}` },
+  });
+  let result: unknown;
+  try {
+    result = await response.json();
+  } catch {
+    if (!response.ok) throw new Error(`Could not load career paths (${response.status}).`);
+    throw new Error("The career paths API returned an invalid response.");
+  }
+
+  if (!response.ok) {
+    const detail = isRecord(result) && typeof result.detail === "string" ? result.detail : undefined;
+    throw new Error(detail ?? `Could not load career paths (${response.status}).`);
+  }
+
+  const isRequirement = (value: unknown): value is CareerPivotRole["requirements"][number] =>
+    isRecord(value)
+    && typeof value.skill === "string"
+    && typeof value.uri === "string"
+    && (value.frequency === null || typeof value.frequency === "number");
+  const isCareerPivotRole = (value: unknown): value is CareerPivotRole =>
+    isRecord(value)
+    && typeof value.role === "string"
+    && Array.isArray(value.requirements)
+    && value.requirements.every(isRequirement);
+  if (!Array.isArray(result) || !result.every(isCareerPivotRole)) {
+    throw new Error("The career paths API returned an invalid response.");
+  }
+  return result;
+}
+
 function getApiUrl(): string {
   if (!API_URL) throw new Error("EXPO_PUBLIC_API_URL is not set.");
   return API_URL.replace(/\/+$/, "");
@@ -173,6 +241,7 @@ function createMockAnalysis(role: string): PipelineAnalysis {
       emerging: null,
       emerging_note: "Demo results do not include market trend data.",
     },
+    market_emergence: null,
   };
 }
 
@@ -202,6 +271,27 @@ function isPipelineAnalysis(value: unknown): value is PipelineAnalysis {
     || typeof marketDelta.emerging_note !== "string"
     || typeof marketDelta.high_roi_note !== "string"
     || !Array.isArray(marketDelta.high_roi_gaps)) return false;
+  const isEmergingSkill = (item: unknown) =>
+    isRecord(item)
+    && typeof item.esco_uri === "string"
+    && typeof item.skill === "string"
+    && Array.isArray(item.history)
+    && item.history.length === 4
+    && item.history.every((point) => typeof point === "number")
+    && typeof item.previous_frequency === "number"
+    && typeof item.current_frequency === "number"
+    && typeof item.delta_pp === "number"
+    && typeof item.emergence_score === "number"
+    && (item.status === "rising" || item.status === "stable" || item.status === "declining");
+  const marketEmergence = value.market_emergence;
+  if (marketEmergence !== undefined && marketEmergence !== null
+    && (!isRecord(marketEmergence)
+      || typeof marketEmergence.role !== "string"
+      || marketEmergence.period_days !== 30
+      || typeof marketEmergence.current_postings !== "number"
+      || typeof marketEmergence.previous_postings !== "number"
+      || !Array.isArray(marketEmergence.skills)
+      || !marketEmergence.skills.every(isEmergingSkill))) return false;
   const isCoveredSkill = (item: unknown) =>
     isRecord(item)
     && typeof item.skill === "string"
@@ -211,6 +301,8 @@ function isPipelineAnalysis(value: unknown): value is PipelineAnalysis {
     && (item.frequency === null || typeof item.frequency === "number")
     && (item.reason === undefined || typeof item.reason === "string")
     && (item.evidence === undefined || typeof item.evidence === "string")
+    && (item.cv_evidence === undefined || typeof item.cv_evidence === "string")
+    && (item.cv_highlight === undefined || typeof item.cv_highlight === "string")
     && (item.gap_confidence === undefined || typeof item.gap_confidence === "number");
   const isHighRoiGap = (item: unknown) =>
     isRecord(item)
@@ -229,7 +321,6 @@ function isPipelineAnalysis(value: unknown): value is PipelineAnalysis {
     && typeof item.uri === "string"
     && typeof item.in_esco === "boolean"
     && typeof item.mentions === "number";
-
   const result = value;
   return typeof result.role === "string"
     && typeof result.profile_source === "string"

@@ -28,19 +28,20 @@ export async function saveAnalysisHistory(
   resumeId: string,
   roleTitle: string,
 ): Promise<AnalysisHistoryEntry> {
-  const { data: role, error: roleError } = await supabase
+  const { data: roles, error: roleError } = await supabase
     .from("job_roles")
     .select("id")
     .eq("title", roleTitle)
-    .maybeSingle();
+    .limit(2);
   if (roleError) throw roleError;
+  const roleId = roles?.length === 1 ? roles[0].id : null;
 
   const { data, error } = await supabase
     .from("skill_analyses")
     .insert({
       user_id: userId,
       resume_id: resumeId,
-      job_role_id: role?.id ?? null,
+      job_role_id: roleId,
       readiness_index: analysis.readiness,
       result_data: analysis,
     })
@@ -120,6 +121,10 @@ function unavailableAnalysis(row: AnalysisRow, fileUrl?: string, roleTitle?: str
     relationships: [],
     marketInsights: {
       highRoiGaps: [],
+      emergingSkills: [],
+      currentPostings: 0,
+      previousPostings: 0,
+      emergingRole: roleTitle || "target",
       highRoiNote: "",
       emergingNote: "This older analysis does not have a saved detailed report.",
     },
