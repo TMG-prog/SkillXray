@@ -1,5 +1,14 @@
-fastapi
-uvicorn[standard]
-transformers
+--extra-index-url https://download.pytorch.org/whl/cpu
 torch
-pydantic
+transformers
+sentence-transformers
+numpy<2
+pandas
+pyarrow
+scikit-learn
+tqdm
+pypdf
+python-docx
+spacy==3.7.5
+en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl
+supabase>=2.0

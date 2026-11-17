@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>SkillXray Administration</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar"><div class="brand"><span class="brand-mark">S</span><div><strong>SkillXray</strong><small>ADMINISTRATION</small></div></div><button id="signout" class="quiet" hidden>Sign out</button></header>
+  <main>
+    <section id="login-view" class="login-panel">
+      <p class="eyebrow">SECURE ADMINISTRATION</p>
+      <h1>Welcome back.</h1>
+      <p>Sign in with an account that has been granted administrator access.</p>
+      <form id="login-form" class="form-grid">
+        <label>Email <input name="email" type="email" autocomplete="username" required></label>
+        <label>Password <input name="password" type="password" autocomplete="current-password" required></label>
+        <button type="submit">Sign in</button>
+      </form>
+    </section>
+    <div id="console" hidden>
+      <div class="intro"><div><p class="eyebrow">ADMINISTRATION</p><h1>Control center</h1><p>Manage the people and data behind SkillXray.</p></div><span class="badge">Administrator</span></div>
+      <nav id="navigation" aria-label="Administration sections">
+        <button data-section="users" class="active">Accounts</button><button data-section="taxonomy">Taxonomies</button><button data-section="datasets">Datasets</button><button data-section="resources">Learning resources</button>
+      </nav>
+      <section id="users" class="section">
+        <div class="heading"><div><h2>User accounts</h2><p>View users, edit their profile name, or suspend access. Existing access tokens may remain usable until they expire.</p></div><button data-action="load-users" class="secondary">Search / refresh</button></div>
+        <div class="toolbar"><input id="user-search" type="search" placeholder="Search users by name or email" aria-label="Search users"><button data-action="users-prev" class="secondary">Previous</button><span id="users-page"></span><button data-action="users-next" class="secondary">Next</button></div>
+        <div id="users-list" class="list"></div>
+      </section>
+      <section id="taxonomy" class="section" hidden>
+        <div class="heading"><div><h2>Taxonomies</h2><p>Manage the role catalog and stage ESCO changes for a reviewed release.</p></div></div>
+        <div class="notice">ESCO changes are staged only. Export the changes and rebuild the scorer artifacts before deployment.</div>
+        <div class="panel"><div class="heading"><h3>Job roles</h3><button data-action="load-roles" class="secondary">Search</button></div>
+          <div class="toolbar"><input id="role-search" type="search" placeholder="Search role titles" aria-label="Search roles"><button data-action="roles-prev" class="secondary">Previous</button><span id="roles-page"></span><button data-action="roles-next" class="secondary">Next</button></div>
+          <div id="roles-list" class="list"></div>
+          <details><summary id="role-form-title">Add a role</summary><form id="role-form" class="form-grid">
+            <input name="id" type="hidden"><label>Title <input name="title" maxlength="200" required></label>
+            <label>Description <textarea name="description"></textarea></label><label>Model role key <input name="model_role"></label>
+            <label>Ingestion search query <input name="search_query"></label><label>Title matching regex <input name="title_pattern"></label>
+            <div class="actions"><button type="submit">Save role</button><button type="button" class="secondary" data-action="clear-role">Clear</button></div>
+          </form></details>
+        </div>
+        <div class="panel"><div class="heading"><div><h3>ESCO source</h3><p>Browse the local source files; edits below do not change them.</p></div></div>
+          <div class="toolbar"><select id="esco-kind" aria-label="ESCO type"><option value="skill">Skills</option><option value="occupation">Occupations</option><option value="skill_relation">Related skills</option><option value="broader_relation">Broader relationships</option></select><input id="esco-search" type="search" placeholder="Search source records" aria-label="Search ESCO"><button data-action="load-esco" class="secondary">Search</button><button data-action="esco-prev" class="secondary">Previous</button><span id="esco-page"></span><button data-action="esco-next" class="secondary">Next</button></div>
+          <div id="esco-list" class="list"></div>
+          <details><summary>Stage an ESCO change</summary><form id="taxonomy-form" class="form-grid">
+            <label>Type <select name="kind"><option value="skill">Skill</option><option value="occupation">Occupation</option><option value="skill_relation">Related skills</option><option value="broader_relation">Broader relationship</option></select></label>
+            <label>Operation <select name="operation"><option value="upsert">Add or update</option><option value="delete">Delete</option></select></label>
+            <label>Record JSON <textarea name="record" rows="8" required placeholder='{"conceptUri":"...","preferredLabel":"..."}'></textarea></label>
+            <p class="hint">A skill or occupation needs conceptUri; a related-skill record needs originalSkillUri, relatedSkillUri and relationType; a broader relation needs conceptUri and broaderUri. Add a preferredLabel for skill/occupation updates.</p>
+            <button type="submit">Stage change</button>
+          </form></details>
+          <div class="heading"><h3>Staged changes</h3><div class="actions"><button data-action="load-changes" class="secondary">Refresh</button><button data-action="export-changes" class="secondary">Export JSON</button></div></div><div id="changes-list" class="list"></div>
+        </div>
+      </section>
+      <section id="datasets" class="section" hidden>
+        <div class="heading"><div><h2>Datasets</h2><p>Manage job postings and private dataset files.</p></div></div>
+        <div class="notice">Posting changes are reflected in market profiles after the analysis backend is restarted. Dataset files are private and are not automatically used for training or analysis.</div>
+        <div class="panel"><div class="heading"><h3>Job postings</h3><button data-action="load-postings" class="secondary">Search</button></div>
+          <div class="toolbar"><input id="posting-search" type="search" placeholder="Search posting titles" aria-label="Search postings"><button data-action="postings-prev" class="secondary">Previous</button><span id="postings-page"></span><button data-action="postings-next" class="secondary">Next</button></div><div id="postings-list" class="list"></div>
+          <form id="posting-import" class="inline-form"><label>Import UTF-8 CSV <input type="file" name="file" accept=".csv,text/csv" required></label><button type="submit">Import postings</button></form>
+          <p class="hint">Required CSV columns: provider, external_id, role_key, title. Up to 1,000 rows and 10 MB per import; matching provider/external ID rows are updated. Omitted optional fields, role links and ingestion metadata are cleared.</p>
+        </div>
+        <div class="panel"><div class="heading"><h3>Private dataset files</h3><button data-action="load-datasets" class="secondary">Refresh</button></div><div id="datasets-list" class="list"></div><form id="dataset-upload" class="inline-form"><label>Upload file <input type="file" name="file" required></label><button type="submit">Upload</button></form><p class="hint">Maximum 10 MB per file. Upload only datasets you are authorized to manage.</p></div>
+      </section>
+      <section id="resources" class="section" hidden>
+        <div class="heading"><div><h2>Learning resources</h2><p>Published resources can be used in learning recommendations.</p></div><button data-action="load-resources" class="secondary">Refresh</button></div>
+        <div id="resources-list" class="list"></div>
+        <details class="panel"><summary id="resource-form-title">Add a resource</summary><form id="resource-form" class="form-grid">
+          <input name="id" type="hidden"><label>Title <input name="title" maxlength="200" required></label><label>Provider <input name="provider" maxlength="200" required></label><label>URL <input name="url" type="url" required></label><label>Matching keywords, separated by commas <input name="keywords" required></label><label>Priority (lower first) <input name="priority" type="number" value="100" required></label><label class="checkbox"><input name="published" type="checkbox"> Published</label>
+          <div class="actions"><button type="submit">Save resource</button><button type="button" class="secondary" data-action="clear-resource">Clear</button></div>
+        </form></details>
+      </section>
+    </div>
+    <div id="status" role="status" aria-live="polite"></div>
+  </main>
+</body>
+</html>

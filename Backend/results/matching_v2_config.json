@@ -1,0 +1,20 @@
+{
+  "rule": "baseline: exact | spans >= fair_base_t",
+  "threshold": 0.81,
+  "use": {
+    "A": false,
+    "B": false,
+    "C": false
+  },
+  "inherit_max_depth": 2,
+  "inherit_max_desc": 150,
+  "z_sd_floor": 0.03,
+  "z_clip": [
+    -5.0,
+    10.0
+  ],
+  "ctx_max_words": 60,
+  "n_background": 195,
+  "created": "2026-11-16",
+  "selection_reason": "All custom rules underperformed or were significantly inferior; retained the exact-match plus span-similarity baseline."
+}

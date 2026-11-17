@@ -1,0 +1,817 @@
+# Terms kept from your current file
+regulatory compliance
+strategic finance
+lesson plans
+multidisciplinary interventions
+marketing budget
+marketing plan
+software program management
+business development
+account management
+contract management
+document management
+capacity analysis
+cost estimation
+distribution expansion
+CRM
+
+# Domain terms your notebook adds by default (Kenya and trades)
+kra
+itax
+nita
+psv
+house wiring
+electrical installation
+bricklaying
+building works
+greenhouse
+crop production
+agribusiness
+agronomy
+auto repair
+engine repair
+braiding
+weaving
+fades
+shaving
+haircuts
+
+# AI, LLM and machine learning
+large language models
+LLM
+generative AI
+retrieval augmented generation
+prompt engineering
+fine-tuning
+vector database
+embeddings
+LangGraph
+CrewAI
+Ollama
+vLLM
+Qdrant
+pgvector
+AI agents
+model context protocol
+MLOps
+LLMOps
+model monitoring
+feature store
+feature engineering
+hyperparameter tuning
+time series forecasting
+causal inference
+A/B testing
+experiment design
+statistical modelling
+natural language processing
+computer vision
+recommendation systems
+anomaly detection
+model deployment
+DVC
+BentoML
+SHAP
+
+# Data engineering and analytics
+DuckDB
+Apache Iceberg
+Apache Beam
+Apache Airflow
+Debezium
+Redpanda
+Great Expectations
+data observability
+data contracts
+data mesh
+data lakehouse
+medallion architecture
+dimensional modelling
+star schema
+slowly changing dimensions
+ELT
+change data capture
+reverse ETL
+semantic layer
+LookML
+DAX
+Microsoft Fabric
+Unity Catalog
+Delta Live Tables
+Azure Data Lake
+Azure Databricks
+Azure Synapse
+Dataflow
+Dataproc
+Amazon Athena
+data modelling
+data warehousing
+data pipelines
+data governance
+data quality
+data lineage
+master data management
+data catalog
+cohort analysis
+funnel analysis
+KPI dashboards
+ad hoc analysis
+statistical analysis
+hypothesis testing
+regression analysis
+forecasting
+
+# Software engineering
+REST APIs
+RESTful APIs
+microservices
+event-driven architecture
+domain-driven design
+test-driven development
+behaviour-driven development
+object-oriented programming
+design patterns
+code review
+unit testing
+integration testing
+API design
+Pydantic
+SQLAlchemy
+Celery
+Gunicorn
+Poetry
+Quarkus
+Micronaut
+Ktor
+.NET Core
+Blazor
+Entity Framework
+SvelteKit
+Remix
+Astro
+Zustand
+TanStack Query
+Material UI
+Chakra UI
+Prisma
+Vitest
+Turborepo
+Deno
+Bun
+Capacitor
+Expo
+Kotlin Multiplatform
+Webflow
+Framer
+responsive design
+progressive web apps
+web accessibility
+WCAG
+
+# DevOps, cloud and infrastructure
+Karpenter
+Crossplane
+Terragrunt
+Kustomize
+Argo Workflows
+Tekton
+Open Policy Agent
+Trivy
+Grafana Loki
+OpenTelemetry
+Jaeger
+Sentry
+Honeycomb
+Cloud Run
+GKE
+AKS
+AWS Fargate
+API Gateway
+Azure Functions
+Bicep
+ARM templates
+GitOps
+infrastructure as code
+CI/CD
+DevSecOps
+observability
+service mesh
+Linkerd
+Envoy
+Traefik
+Cilium
+chaos engineering
+site reliability engineering
+incident response
+incident management
+capacity planning
+disaster recovery
+high availability
+load balancing
+Azure AD
+Entra ID
+Microsoft 365
+Intune
+Exchange Online
+Group Policy
+PowerCLI
+Veeam
+Nutanix
+Proxmox
+patch management
+endpoint management
+
+# Security
+SIEM
+SOAR
+Microsoft Sentinel
+Microsoft Defender
+MITRE ATT&CK
+zero trust
+Wazuh
+Zeek
+Suricata
+Ghidra
+threat hunting
+threat modelling
+penetration testing
+vulnerability management
+vulnerability assessment
+security operations
+identity and access management
+ISO 27001
+SOC 2
+PCI DSS
+NIST CSF
+CISSP
+CISA
+CISM
+CEH
+OSCP
+CompTIA Security+
+
+# IT support and networking
+CCNA
+CCNP
+CompTIA A+
+CompTIA Network+
+ITIL
+ITIL 4
+service desk
+ticketing systems
+remote desktop
+VPN
+DNS
+DHCP
+TCP/IP
+Active Directory administration
+SLA management
+asset management
+hardware troubleshooting
+
+# QA and testing
+test automation
+test plans
+test cases
+regression testing
+performance testing
+exploratory testing
+user acceptance testing
+UAT
+bug tracking
+Robot Framework
+WebdriverIO
+k6
+Gatling
+BrowserStack
+
+# UX, design and graphics
+user research
+usability testing
+wireframing
+prototyping
+design systems
+information architecture
+user flows
+journey mapping
+personas
+Figma Dev Mode
+Axure
+UserTesting
+Adobe Creative Cloud
+Adobe Acrobat
+motion graphics
+typography
+brand identity
+logo design
+layout design
+print design
+packaging design
+photo editing
+video editing
+
+# Product, project and business analysis
+product roadmap
+product discovery
+product strategy
+user stories
+acceptance criteria
+backlog grooming
+sprint planning
+Scrum
+Kanban
+Agile
+Waterfall
+SAFe framework
+PRINCE2
+PMP
+Certified ScrumMaster
+Lean Six Sigma
+Six Sigma
+Kaizen
+OKRs
+north star metric
+product-led growth
+Pendo
+FullStory
+Productboard
+Notion
+Zapier
+n8n
+Retool
+stakeholder management
+requirements gathering
+requirements analysis
+business process modelling
+BPMN
+process mapping
+process improvement
+gap analysis
+root cause analysis
+use cases
+UML
+SWOT analysis
+business case
+cost-benefit analysis
+risk register
+RACI matrix
+Gantt charts
+earned value management
+resource planning
+change management
+project governance
+benefits realisation
+vendor management
+
+# Finance, accounting, audit and credit
+accounts payable
+accounts receivable
+general ledger
+month-end close
+bank reconciliation
+journal entries
+financial reporting
+financial statements
+financial modelling
+budgeting and forecasting
+variance analysis
+cash flow management
+working capital
+fixed assets
+payroll processing
+tax compliance
+VAT returns
+withholding tax
+transfer pricing
+IFRS
+IFRS 9
+IFRS 16
+GAAP
+XBRL
+expected credit loss
+consolidation
+intercompany reconciliation
+cost accounting
+management accounting
+revenue recognition
+internal controls
+internal audit
+external audit
+audit sampling
+risk-based auditing
+SOX compliance
+ACL Analytics
+IDEA software
+CaseWare
+TeamMate
+Sage Evolution
+Pastel Partner
+Tally Prime
+Zoho Books
+Odoo
+Bill.com
+Expensify
+DCF valuation
+discounted cash flow
+LBO modelling
+mergers and acquisitions
+due diligence
+equity research
+portfolio management
+credit analysis
+credit scoring
+loan underwriting
+loan origination
+covenant monitoring
+Basel III
+stress testing
+treasury management
+ACCA
+CFA
+Certified Public Accountant
+ICPAK
+KASNEB
+
+# Compliance, risk and legal
+AML
+KYC
+sanctions screening
+transaction monitoring
+customer due diligence
+regulatory reporting
+GDPR
+data protection
+Data Protection Act
+policy development
+risk assessment
+risk management framework
+operational risk
+fraud detection
+fraud investigation
+ISO 31000
+ISO 9001
+whistleblowing
+contract drafting
+contract review
+legal research
+case management
+legal drafting
+litigation support
+e-discovery
+conveyancing
+intellectual property
+corporate governance
+company secretarial
+
+# People and HR
+talent acquisition
+applicant tracking systems
+candidate sourcing
+Boolean search
+LinkedIn Recruiter
+interview scheduling
+onboarding
+performance management
+succession planning
+compensation and benefits
+job evaluation
+employee relations
+employee engagement
+HRIS
+HR analytics
+workforce planning
+labour law
+Employment Act
+learning and development
+training needs analysis
+CIPD
+SHRM-CP
+PHR
+Rippling
+BambooHR
+Lattice
+Culture Amp
+
+# Marketing, communications and sales
+search engine optimisation
+SEO
+SEM
+pay-per-click
+PPC
+email marketing
+content marketing
+content strategy
+social media marketing
+influencer marketing
+marketing automation
+marketing analytics
+conversion rate optimisation
+account-based marketing
+lead generation
+demand generation
+brand management
+market research
+customer segmentation
+campaign management
+copywriting
+copyediting
+press releases
+media relations
+crisis communications
+internal communications
+speechwriting
+editorial calendar
+Canva Pro
+Meltwater
+Brandwatch
+Google Search Console
+Screaming Frog
+Apollo.io
+Clari
+Chargebee
+Recurly
+Customer.io
+Iterable
+cold calling
+pipeline management
+sales forecasting
+sales prospecting
+solution selling
+consultative selling
+MEDDIC
+negotiation
+key account management
+territory management
+B2B sales
+B2C sales
+inside sales
+field sales
+lead qualification
+upselling
+cross-selling
+quota attainment
+proposal writing
+tender writing
+
+# Customer service and operations
+customer support
+customer success
+customer onboarding
+first call resolution
+CSAT
+NPS
+churn reduction
+complaint handling
+omnichannel support
+live chat
+knowledge base
+call centre
+Five9
+Genesys
+Talkdesk
+Aircall
+Zendesk Guide
+Help Scout
+
+# Administration and office
+calendar management
+travel coordination
+minute taking
+records management
+filing systems
+data entry
+document control
+invoice processing
+expense reports
+office administration
+meeting coordination
+event planning
+event coordination
+executive support
+reception duties
+switchboard
+Microsoft Planner
+
+# Supply chain, logistics and procurement
+supply chain management
+inventory management
+demand planning
+supply planning
+sales and operations planning
+warehouse management
+WMS
+order fulfilment
+freight forwarding
+customs clearance
+Incoterms
+last mile delivery
+fleet management
+route optimisation
+procurement
+strategic sourcing
+supplier evaluation
+supplier relationship management
+vendor negotiation
+purchase orders
+RFQ
+RFP
+tendering
+e-procurement
+contract negotiation
+category management
+total cost of ownership
+SAP MM
+SAP S/4HANA
+Oracle SCM
+Kinaxis
+Blue Yonder
+Manhattan Associates
+Odoo Inventory
+CIPS
+operations management
+lean manufacturing
+5S
+value stream mapping
+OEE
+production planning
+quality control
+quality assurance
+ISO 14001
+ISO 45001
+HACCP
+health and safety
+OSHA
+
+# Engineering (electrical, mechanical, civil)
+AutoCAD Electrical
+AutoCAD Civil 3D
+Civil 3D
+ETABS
+SAP2000
+STAAD.Pro
+Tekla
+Autodesk Revit
+BIM
+Navisworks
+PLAXIS
+HEC-RAS
+EPANET
+Primavera P6
+bill of quantities
+quantity surveying
+site supervision
+structural analysis
+structural design
+geotechnical
+surveying
+total station
+GIS mapping
+hydrology
+road design
+construction management
+contract administration
+PLC programming
+SCADA
+Siemens TIA Portal
+Allen-Bradley
+ladder logic
+HMI
+motor control
+power systems
+load flow analysis
+ETAP
+DIgSILENT
+PVsyst
+HVAC design
+ASHRAE
+solid modelling
+finite element analysis
+CFD
+geometric dimensioning and tolerancing
+technical drawings
+piping and instrumentation diagrams
+preventive maintenance
+reliability engineering
+FMEA
+Inventor CAD
+Creo Parametric
+Ansys Fluent
+Fusion 360 CAM
+CNC machining
+3D printing
+
+# Education and teaching
+lesson planning
+curriculum development
+classroom management
+differentiated instruction
+formative assessment
+summative assessment
+scheme of work
+learner assessment
+inclusive education
+special educational needs
+competency-based curriculum
+CBC
+IGCSE
+IB curriculum
+Cambridge curriculum
+early childhood education
+phonics
+STEM education
+blended learning
+e-learning
+educational technology
+Kahoot
+Nearpod
+Padlet
+Articulate Storyline
+Moodle LMS
+Zoom for Education
+learning management systems
+instructional design
+
+# Programme management, M&E and development sector
+monitoring and evaluation
+theory of change
+logical framework
+logframe
+results framework
+results-based management
+indicator tracking
+baseline survey
+impact evaluation
+outcome harvesting
+most significant change
+MEAL
+grant management
+grant writing
+proposal development
+donor reporting
+donor compliance
+USAID
+FCDO
+Global Fund
+budget monitoring
+sub-grantee management
+stakeholder mapping
+needs assessment
+community mobilisation
+capacity building
+safeguarding
+gender mainstreaming
+Sustainable Development Goals
+KoboToolbox
+Open Data Kit
+DHIS2
+CommCare
+SurveyCTO
+NVivo
+ATLAS.ti
+MAXQDA
+EViews
+SPSS Statistics
+survey design
+sampling methods
+qualitative analysis
+quantitative analysis
+focus group discussions
+key informant interviews
+
+# Research and consulting
+literature review
+desk research
+competitive analysis
+market sizing
+policy analysis
+benchmarking
+data visualisation
+report writing
+slide deck creation
+executive presentations
+workshop facilitation
+strategy development
+operating model design
+financial due diligence
+
+# Payments and fintech (Kenya and Africa)
+M-Pesa
+Daraja API
+eTIMS
+IFMIS
+mobile money
+payment gateway integration
+Flutterwave
+Paystack
+Pesapal
+
+# Healthcare and clinical (common in postings)
+electronic health records
+EHR
+HL7
+FHIR
+ICD-10
+medical coding
+clinical documentation
+patient scheduling
+HIPAA

@@ -4,12 +4,12 @@ SkillXray is a mobile-first career readiness application that helps job seekers 
 
 ## Current Progress
 
-- **Implemented:** Expo/React Native app structure, Supabase client integration, resume upload and parsing workflow, and a FastAPI skill-extraction service.
-- **Implemented:** Supabase `parse-resume` Edge Function parses PDF/DOCX files, calls the model service, and stores extracted skills.
-- **In progress:** ESCO normalization, role-to-resume skill-gap comparison, readiness scoring, and the complete recommendations workflow.
-- **Deployed:** The skill-extraction model API is hosted on [Hugging Face Spaces](https://huggingface.co/spaces/Tracymgprog/skillxray-api).
+- **Implemented:** The app uploads resumes to Supabase Storage, then sends the selected file and target role to the authenticated FastAPI `/analyze` endpoint.
+- **Implemented:** The FastAPI pipeline parses PDF/DOCX, extracts and normalizes skills, compares them with role requirements, and returns readiness, covered skills, gaps, and warnings.
+- **In progress:** Persisting analysis results and completing the learning recommendations workflow.
 - **Expo Go setup:** The README now documents how to run the app on a device with Expo Go. A standalone app-store release is not configured yet.
-- **Backend verification pending:** The production Supabase function connection and complete app-to-model flow are not confirmed here.
+- **Deployment configuration required:** Set the Expo API URL and configure the FastAPI service with Supabase auth and pipeline artifacts before running end-to-end.
+- **Demo analysis:** Set `EXPO_PUBLIC_USE_MOCK_ANALYSIS=1` in `.env` or `.env.local` and restart Expo to show clearly labeled sample results without uploading the selected resume or calling the model. Remove the setting or set it to `0` to restore real analysis.
 
 ---
 
@@ -43,25 +43,19 @@ This creates a gap between candidate capability and job-market demand. SkillXray
 
 ## System Architecture
 
+The separate [administration console](./admin_app/README.md) provides account, taxonomy, dataset and
+learning-resource management; its setup and operational limitations are documented there.
+
 ```
+┌──────────────────────┐       ┌──────────────────────────┐
+│  Mobile app          │──────▶│  Supabase                │
+│  React Native · Expo │       │  Auth · Postgres · Storage│
+└──────────┬───────────┘       └──────────────────────────┘
+           │ Bearer token + resume file
+           ▼
 ┌──────────────────────────┐
-│  Mobile app              │  React Native · Expo · TypeScript
-│  (auth, upload, reports) │
-└────────────┬─────────────┘
-             │
-┌────────────▼─────────────┐
-│  Supabase                │  Auth · Postgres · Storage
-│  (data + file storage)   │
-└────────────┬─────────────┘
-             │
-┌────────────▼─────────────┐
-│  Edge Function           │  Deno · parse-resume
-│  (processing workflow)   │
-└────────────┬─────────────┘
-             │
-┌────────────▼─────────────┐
-│  Model API               │  Python · FastAPI · JobBERT
-│  (skill extraction)      │  (deployed on Hugging Face Spaces)
+│  Analysis API            │  Python · FastAPI
+│  parse · extract · match │  JobBERT · ESCO · SBERT
 └──────────────────────────┘
 ```
 
@@ -72,13 +66,13 @@ Built with React Native and Expo. It provides authentication, resume upload, ana
 Supabase provides authentication, user profiles, resume metadata, analysis records, skill-gap records, and learning/course tracking data.
 
 ### Processing Layer
-Resume processing runs through Deno-based Supabase Edge Functions, which receive the uploaded resume reference, check processing status, and orchestrate the analysis workflow. This layer is the bridge between the app and the skill analysis process.
+The app calls the FastAPI `/analyze` endpoint with the resume file, target role, and Supabase access token. FastAPI validates the user token, parses the document, and runs the skill and readiness pipeline.
 
 ### Business Logic Layer
 Service modules handle uploading a resume, requesting analysis, polling for status, retrieving skill gaps, and storing readiness data in app state. They keep client-side logic separate from the UI.
 
 ### Model Layer
-A Python FastAPI service extracts skills from resume text with the configured token-classification model. ESCO normalization and skill-gap comparison are still in progress; the current parsing workflow stores extracted skills but does not yet complete the full readiness analysis.
+The API adapts the notebook-derived v2 scorer to the mobile response contract. It extracts resume skills, compares them with the selected role profile, and returns readiness, per-skill evidence, and weighted gaps. Database-backed market trends compare dated postings across a 90-day recent window and the preceding 275-day baseline, with deduplication, minimum support, smoothing, classifications, and sample-posting evidence. The app persists each full report with its `skill_analyses` record and reloads the user's recent history from Supabase.
 
 ---
 
@@ -89,7 +83,7 @@ A Python FastAPI service extracts skills from resume text with the configured to
 | Mobile app | React Native, Expo, Expo Router, TypeScript |
 | State management | React Context |
 | Backend services | Supabase (Auth, Postgres, Storage) |
-| Serverless processing | Supabase Edge Functions (Deno) |
+| Analysis API | FastAPI |
 | Skill extraction | JobBERT (`jjzha/jobbert_skill_extraction`) |
 | Semantic matching | Sentence-BERT (`all-MiniLM-L6-v2`) |
 | NLP preprocessing | spaCy (`en_core_web_sm`) |
@@ -134,11 +128,13 @@ Raw text → Cleaning → JobBERT extraction → Span post-processing → ESCO n
 2. They choose a resume file to upload.
 3. The resume is saved to storage.
 4. A resume record is created in the database.
-5. The app invokes the `parse-resume` Edge Function.
-6. The function extracts text from the PDF/DOCX, calls the model API, and saves extracted skills.
-7. ESCO normalization, skill-gap comparison, readiness scoring, and recommendations are the next implementation steps.
+5. The app sends the resume file and selected target role to the authenticated FastAPI `/analyze` endpoint.
+6. The backend parses the file, runs skill extraction and ESCO matching, scores role requirements, and returns readiness, matched skills, gaps, and warnings.
+7. The app saves each result in the user's `skill_analyses` table and displays the newest result in its analysis screen. Open **History** to revisit an earlier result after uploading a new resume.
 
-The current implemented flow reaches resume skill extraction and storage; it does not yet complete the readiness-to-learning-plan cycle.
+The resume file is stored in Supabase Storage. Analysis history is stored in Supabase, scoped to the signed-in user, and keeps the 50 most recent results in the app. Each `skill_analyses` row stores its resume/role references and readiness score; the full report is stored in the `result_data` JSONB column. Apply the migration in `supabase/migrations` before using persisted analysis history. The model pipeline processes the local file upload in memory.
+
+On the analysis screen, **Download report (PDF)** exports the analysis currently displayed, including a selected historical analysis. The report includes available CV excerpts, gaps, recommendations, and market insights. On web it downloads directly; on Android and iOS, choose where to save or share it from the system share sheet. Reports contain personal information, so store and share them carefully. Older saved analyses may not contain detailed evidence.
 
 ---
 
@@ -167,11 +163,11 @@ SkillXray/
 ├── supabase/
 │   ├── config.toml             # Supabase local configuration
 │   └── functions/
-│       └── parse-resume/       # Deno Edge Function for resume processing
+│       └── parse-resume/       # Optional Supabase Edge Function for skill extraction
 ├── Backend/
-│   ├── main.py                 # FastAPI skill-extraction endpoint
-│   ├── Dockerfile              # container configuration (port 7860)
-│   └── models/                 # local model artifacts
+│   └── app/
+│       ├── main.py             # FastAPI analysis API
+│       └── pipeline.py         # Extraction, ESCO linking, and role matching
 ├── android/                    # Android native project
 ├── assets/                     # static assets
 ├── app.json                    # Expo configuration
@@ -185,11 +181,13 @@ SkillXray/
 
 ### Mobile app
 
-Run the app on a phone using Expo Go by following the [Expo Go setup](#run-the-app-with-expo-go) below. Deno is only needed if you are developing the Supabase Edge Function locally.
+Run the app on a phone using Expo Go by following the [Expo Go setup](#run-the-app-with-expo-go) below.
 
-### Model API
+### Analysis API
 
-The Dockerfile in `Backend/` starts `main:app` on port `7860`. The service requires `SKILL_MODEL_ID` and `MODEL_API_KEY`; set `HF_TOKEN` only if the model repository is private. For local development, set these environment variables and run `uvicorn main:app --reload --port 7860` from `Backend/`.
+The Expo app calls the FastAPI service in `Backend/app/main.py`. For local development, configure that service's Supabase authentication environment (`SUPABASE_URL` and `SUPABASE_ANON_KEY`) and its model/artifact requirements, then run `uvicorn app.main:app --reload --host 0.0.0.0 --port 8000` from `Backend/`.
+
+The backend validates the Supabase access token against the Supabase project. Keep `SUPABASE_ANON_KEY` in the backend environment; do not put backend-only secrets in the Expo app.
 
 ---
 
@@ -200,16 +198,17 @@ Configure the Expo app with its public Supabase project values:
 ```bash
 EXPO_PUBLIC_SUPABASE_URL=your_project_url
 EXPO_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+EXPO_PUBLIC_API_URL=http://your-backend-host:8000
 ```
 
-Put these in the project-root `.env` for local Expo development. The `EXPO_PUBLIC_` values are bundled into the app and are not secrets. Never put a Supabase service-role key or model API key in the mobile app.
+Put these in the project-root `.env` for local Expo development. For a physical device, use your computer's LAN address instead of `localhost`. The `EXPO_PUBLIC_` values are bundled into the app and are not secrets. Never put a Supabase service-role key or model API key in the mobile app.
 
 ## Run the App with Expo Go
 
 This starts the development version of SkillXray on a physical phone; it does not publish the app to an app store.
 
 1. Install [Expo Go](https://expo.dev/go) on your Android or iPhone.
-2. Create the project-root `.env` file with the Supabase URL and anon key shown above.
+2. Create the project-root `.env` file with the Supabase URL, anon key, and analysis API URL shown above.
 3. In a terminal at the project root, install dependencies and start Expo:
 
     ```bash
@@ -220,6 +219,4 @@ This starts the development version of SkillXray on a physical phone; it does no
 4. Connect your phone and computer to the same Wi-Fi network. Open Expo Go on Android and scan the QR code shown in the terminal or browser. On iPhone, scan the QR code with the Camera app and open it in Expo Go.
 5. To connect when the phone and computer cannot reach each other over the local network, stop the server and run `npx expo start --tunnel`, then scan the new QR code.
 
-For resume skill extraction to work, the Supabase `parse-resume` Edge Function must also be deployed and configured to call the [deployed model API](https://huggingface.co/spaces/Tracymgprog/skillxray-api). Keep `MODEL_URL` and `MODEL_API_KEY` in Supabase function secrets, not in the Expo app.
-
-
+The analysis API must be reachable from the phone and configured with the pipeline's required model and artifact files. In local development, allow the phone and computer to communicate over the same Wi-Fi network and set `EXPO_PUBLIC_API_URL` to the computer's LAN address.

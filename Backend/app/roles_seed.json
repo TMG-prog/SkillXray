@@ -1,0 +1,279 @@
+[
+ {
+  "model_role": "business development",
+  "search_query": "business development manager",
+  "title_pattern": "business develop|account executive|account manager|key account",
+  "extra_queries": [],
+  "match_order": 1
+ },
+ {
+  "model_role": "data scientist",
+  "search_query": "data scientist",
+  "title_pattern": "data scientist|machine learning|\\bml engineer|\\bai engineer|applied scientist",
+  "extra_queries": [],
+  "match_order": 2
+ },
+ {
+  "model_role": "data engineer",
+  "search_query": "data engineer",
+  "title_pattern": "data engineer|analytics engineer|\\betl\\b|big data",
+  "extra_queries": [],
+  "match_order": 3
+ },
+ {
+  "model_role": "data analyst",
+  "search_query": "data analyst",
+  "title_pattern": "data analyst|business intelligence|\\bbi (analyst|developer)|reporting analyst|analytics analyst",
+  "extra_queries": [],
+  "match_order": 4
+ },
+ {
+  "model_role": "devops engineer",
+  "search_query": "devops engineer",
+  "title_pattern": "devops|site reliability|\\bsre\\b|cloud engineer|platform engineer|infrastructure engineer",
+  "extra_queries": [],
+  "match_order": 5
+ },
+ {
+  "model_role": "qa engineer",
+  "search_query": "qa engineer",
+  "title_pattern": "\\bqa\\b|quality assurance|test engineer|software tester|\\bsdet\\b|test automation",
+  "extra_queries": [],
+  "match_order": 6
+ },
+ {
+  "model_role": "cybersecurity analyst",
+  "search_query": "cybersecurity analyst",
+  "title_pattern": "cyber ?security|information security|security (analyst|engineer)|\\bsoc analyst",
+  "extra_queries": [],
+  "match_order": 7
+ },
+ {
+  "model_role": "ux designer",
+  "search_query": "ux designer",
+  "title_pattern": "\\bux\\b|\\bui\\b|user experience|product designer|interaction designer",
+  "extra_queries": [],
+  "match_order": 8
+ },
+ {
+  "model_role": "product manager",
+  "search_query": "product manager",
+  "title_pattern": "product (manager|owner)",
+  "extra_queries": [],
+  "match_order": 9
+ },
+ {
+  "model_role": "project manager",
+  "search_query": "project manager",
+  "title_pattern": "project manager|programme manager|program manager|scrum master|project coordinator",
+  "extra_queries": [],
+  "match_order": 10
+ },
+ {
+  "model_role": "business analyst",
+  "search_query": "business analyst",
+  "title_pattern": "business analyst|systems analyst|requirements analyst",
+  "extra_queries": [],
+  "match_order": 11
+ },
+ {
+  "model_role": "it support",
+  "search_query": "it support specialist",
+  "title_pattern": "it support|help ?desk|service desk|desktop support|technical support|it technician|it specialist|it analyst|systems? support|information technology (support|specialist)",
+  "extra_queries": [
+   "help desk technician",
+   "desktop support technician",
+   "service desk analyst"
+  ],
+  "match_order": 12
+ },
+ {
+  "model_role": "systems administrator",
+  "search_query": "systems administrator",
+  "title_pattern": "system(s)? administrator|sysadmin|network (engineer|administrator)|it administrator",
+  "extra_queries": [],
+  "match_order": 13
+ },
+ {
+  "model_role": "software",
+  "search_query": "software developer",
+  "title_pattern": "software|\\bdevelopers?\\b|programmer|full[- ]?stack|front[- ]?end|back[- ]?end",
+  "extra_queries": [],
+  "match_order": 14
+ },
+ {
+  "model_role": "bookkeeper",
+  "search_query": "bookkeeper",
+  "title_pattern": "bookkeep|accounts? (payable|receivable)|payroll|accounting (clerk|assistant)",
+  "extra_queries": [],
+  "match_order": 15
+ },
+ {
+  "model_role": "auditor",
+  "search_query": "auditor",
+  "title_pattern": "auditor|\\baudit\\b",
+  "extra_queries": [],
+  "match_order": 16
+ },
+ {
+  "model_role": "credit analyst",
+  "search_query": "credit analyst",
+  "title_pattern": "credit (analyst|officer|manager)|loan officer|underwriter|relationship manager|banker|banking",
+  "extra_queries": [],
+  "match_order": 17
+ },
+ {
+  "model_role": "compliance officer",
+  "search_query": "compliance officer",
+  "title_pattern": "compliance|risk (analyst|manager|officer)|regulatory|\\baml\\b|\\bkyc\\b",
+  "extra_queries": [],
+  "match_order": 18
+ },
+ {
+  "model_role": "financial analyst",
+  "search_query": "financial analyst",
+  "title_pattern": "financial analyst|investment analyst|fp&a|finance",
+  "extra_queries": [],
+  "match_order": 19
+ },
+ {
+  "model_role": "accountant",
+  "search_query": "accountant",
+  "title_pattern": "accountant|accounting",
+  "extra_queries": [],
+  "match_order": 20
+ },
+ {
+  "model_role": "recruiter",
+  "search_query": "recruiter",
+  "title_pattern": "recruit|talent acquisition|sourcer",
+  "extra_queries": [],
+  "match_order": 21
+ },
+ {
+  "model_role": "human resources",
+  "search_query": "human resources",
+  "title_pattern": "human resources|\\bhr\\b|people (partner|operations)|talent",
+  "extra_queries": [],
+  "match_order": 22
+ },
+ {
+  "model_role": "marketing",
+  "search_query": "marketing specialist",
+  "title_pattern": "marketing|\\bseo\\b|social media|brand manager|content (marketer|strategist)",
+  "extra_queries": [],
+  "match_order": 23
+ },
+ {
+  "model_role": "customer service",
+  "search_query": "customer service representative",
+  "title_pattern": "customer (service|support|success)|client services|call cent(er|re)",
+  "extra_queries": [],
+  "match_order": 24
+ },
+ {
+  "model_role": "sales",
+  "search_query": "sales representative",
+  "title_pattern": "\\bsales\\b",
+  "extra_queries": [],
+  "match_order": 25
+ },
+ {
+  "model_role": "administrative assistant",
+  "search_query": "administrative assistant",
+  "title_pattern": "administrative|executive assistant|office (manager|administrator|assistant)|secretary|receptionist|personal assistant",
+  "extra_queries": [],
+  "match_order": 26
+ },
+ {
+  "model_role": "operations manager",
+  "search_query": "operations manager",
+  "title_pattern": "operations (manager|analyst|coordinator|supervisor)|general manager",
+  "extra_queries": [],
+  "match_order": 27
+ },
+ {
+  "model_role": "supply chain",
+  "search_query": "supply chain analyst",
+  "title_pattern": "supply chain|procurement|purchasing|logistics (analyst|coordinator|manager)|\\bbuyer\\b",
+  "extra_queries": [],
+  "match_order": 28
+ },
+ {
+  "model_role": "legal",
+  "search_query": "legal officer",
+  "title_pattern": "paralegal|legal (counsel|assistant|officer|advisor|secretary)|lawyer|attorney",
+  "extra_queries": [],
+  "match_order": 29
+ },
+ {
+  "model_role": "communications",
+  "search_query": "communications officer",
+  "title_pattern": "public relations|communications? (manager|officer|specialist|coordinator)|copywriter|content writer|journalist|\\beditor\\b",
+  "extra_queries": [],
+  "match_order": 30
+ },
+ {
+  "model_role": "research analyst",
+  "search_query": "research analyst",
+  "title_pattern": "research (analyst|associate|officer)|market research|policy analyst",
+  "extra_queries": [],
+  "match_order": 31
+ },
+ {
+  "model_role": "consultant",
+  "search_query": "management consultant",
+  "title_pattern": "consultant|strategy (analyst|manager)",
+  "extra_queries": [],
+  "match_order": 32
+ },
+ {
+  "model_role": "graphic designer",
+  "search_query": "graphic designer",
+  "title_pattern": "graphic design|visual design|multimedia",
+  "extra_queries": [],
+  "match_order": 33
+ },
+ {
+  "model_role": "electrical engineer",
+  "search_query": "electrical engineer",
+  "title_pattern": "electrical engineer",
+  "extra_queries": [],
+  "match_order": 34
+ },
+ {
+  "model_role": "mechanical engineer",
+  "search_query": "mechanical engineer",
+  "title_pattern": "mechanical engineer",
+  "extra_queries": [],
+  "match_order": 35
+ },
+ {
+  "model_role": "civil engineer",
+  "search_query": "civil engineer",
+  "title_pattern": "civil engineer",
+  "extra_queries": [],
+  "match_order": 36
+ },
+ {
+  "model_role": "teacher",
+  "search_query": "teacher",
+  "title_pattern": "teacher|instructor|lecturer",
+  "extra_queries": [],
+  "match_order": 37
+ },
+ {
+  "model_role": "program officer",
+  "search_query": "programme officer",
+  "title_pattern": "programm?e (officer|coordinator|manager|associate)|\\bgrants?\\b",
+  "extra_queries": [],
+  "match_order": 38
+ },
+ {
+  "model_role": "monitoring and evaluation",
+  "search_query": "monitoring and evaluation officer",
+  "title_pattern": "monitoring and evaluation|\\bm&e\\b|\\bmeal\\b",
+  "extra_queries": [],
+  "match_order": 39
+ }
+]

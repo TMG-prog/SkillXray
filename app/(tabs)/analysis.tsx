@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -9,6 +9,7 @@ import { useAppData } from "@/state/appdatacontext";
 import { brand, colors, SERIF } from "@/components/ui/theme";
 import { AnalysisVisualizations } from "@/features/skill-analysis/AnalysisVisualizations";
 import { CareerPivotSimulator } from "@/features/skill-analysis/CareerPivotSimulator";
+import { downloadAnalysisReport } from "@/features/skill-analysis/downloadAnalysisReport";
 
 type Severity = "high" | "medium" | "low";
 
@@ -31,7 +32,26 @@ export default function AnalysisScreen() {
   const router = useRouter();
   const { analysis } = useAppData();
   const [activeTab, setActiveTab] = useState<AnalysisTab>("readiness");
-  useEffect(() => setActiveTab("readiness"), [analysis]);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+  useEffect(() => {
+    setActiveTab("readiness");
+    setExportError(null);
+  }, [analysis]);
+
+  async function handleDownload() {
+    if (!analysis || exporting) return;
+    setExporting(true);
+    setExportError(null);
+    try {
+      await downloadAnalysisReport(analysis);
+    } catch (error) {
+      console.error("[analysis-report] export failed", error);
+      setExportError("Couldn't create or share the report. Please try again.");
+    } finally {
+      setExporting(false);
+    }
+  }
 
   if (!analysis) {
     return (
@@ -130,6 +150,22 @@ export default function AnalysisScreen() {
               {analysis.demo && <Text style={styles.demoLabel}>Demo sample score</Text>}
             </View>
           </LinearGradient>
+
+          <Pressable
+            onPress={handleDownload}
+            disabled={exporting}
+            accessibilityRole="button"
+            accessibilityLabel="Download detailed analysis report as PDF"
+            accessibilityState={{ disabled: exporting, busy: exporting }}
+            style={({ pressed }) => [styles.downloadButton, (pressed || exporting) && { opacity: 0.7 }]}
+          >
+            {exporting
+              ? <ActivityIndicator size="small" color={brand.cyan} />
+              : <Feather name="download" size={18} color={brand.cyan} />}
+            <Text style={styles.downloadText}>{exporting ? "Preparing report..." : "Download report (PDF)"}</Text>
+          </Pressable>
+          <Text style={styles.downloadNote}>Includes CV excerpts and market insights. Save or share it securely.</Text>
+          {exportError && <Text accessibilityRole="alert" style={styles.downloadError}>{exportError}</Text>}
 
           {analysis.demo && activeTab !== "readiness" && (
             <View style={styles.demoNotice}>
@@ -309,6 +345,20 @@ const styles = StyleSheet.create({
   scoreText: { position: "absolute", fontSize: 38, fontWeight: "700", color: brand.text },
   scoreTitle: { fontSize: 18, fontWeight: "700", color: brand.text },
   demoLabel: { fontSize: 12, color: "#78350F", marginTop: 6 },
+  downloadButton: {
+    minHeight: 48,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: brand.surface,
+    borderWidth: 1,
+    borderColor: brand.border,
+    borderRadius: 12,
+  },
+  downloadText: { color: brand.text, fontSize: 14, fontWeight: "700" },
+  downloadNote: { color: brand.muted, fontSize: 12, lineHeight: 18, textAlign: "center", marginTop: 8, marginBottom: 18 },
+  downloadError: { color: colors.dark.severityHigh, fontSize: 13, textAlign: "center", marginBottom: 18 },
   tabBar: { flexDirection: "column", gap: 8, marginBottom: 18 },
   tab: {
     minHeight: 48,
