@@ -137,6 +137,31 @@ def test_posting_import_uniform_fields_and_validation(client):
     assert client.post("/api/postings/import", files={"file": ("large.csv", too_many)}).status_code == 422
 
 
+def test_ingestion_status_reports_quota_and_missing_tables(client, monkeypatch):
+    authenticate()
+    monkeypatch.setenv("JSEARCH_MONTHLY_QUOTA", "150")
+    tables = {
+        "/rest/v1/jsearch_usage": [{"requests": 42}],
+        "/rest/v1/ingestion_runs": [{"id": "r1", "status": "success", "trigger": "scheduled"}],
+        "/rest/v1/job_roles": [{"title": "Software Engineer", "model_role": "software", "last_ingested_at": None}],
+    }
+    use_gateway(FakeSupabase(lambda method, path, kwargs: tables[path]))
+    result = client.get("/api/ingestion").json()
+    assert result["quota"] == {"used": 42, "limit": 150, "reserve": 10}
+    assert result["runs"][0]["status"] == "success" and result["roles"][0]["model_role"] == "software"
+    assert result["setup_required"] is False
+
+    def missing(method, path, kwargs):
+        if path != "/rest/v1/job_roles":
+            raise server.HTTPException(404, "Supabase rejected the request; check the submitted data.")
+        return []
+
+    use_gateway(FakeSupabase(missing))
+    pending = client.get("/api/ingestion")
+    assert pending.status_code == 200 and pending.json()["setup_required"] is True
+    assert pending.json()["quota"]["used"] == 0
+
+
 def test_taxonomy_staging_and_complete_export(client):
     authenticate()
     def handler(method, path, kwargs):

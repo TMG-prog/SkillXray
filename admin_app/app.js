@@ -97,7 +97,7 @@ $("#navigation").addEventListener("click", (event) => {
   run(async () => {
     if (button.dataset.section === "users") await loadUsers();
     if (button.dataset.section === "taxonomy") { await loadRoles(); await loadEsco(); await loadChanges(); }
-    if (button.dataset.section === "datasets") { await loadPostings(); await loadDatasets(); }
+    if (button.dataset.section === "datasets") { await loadIngestion(); await loadPostings(); await loadDatasets(); }
     if (button.dataset.section === "resources") await loadResources();
   });
 });
@@ -185,6 +185,23 @@ $("#taxonomy-form").addEventListener("submit", (event) => {
     event.target.reset(); await loadChanges(); status("ESCO change staged.");
   });
 });
+async function loadIngestion() {
+  const result = await api("/api/ingestion");
+  const { used, limit, reserve } = result.quota;
+  const now = new Date();
+  const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + (now.getUTCDate() === 1 && now.getUTCHours() < 3 ? 0 : 1), 1, 3));
+  const summary = [
+    row(`Requests used in ${result.month}: ${used} of ${limit}`, `${Math.max(limit - used - reserve, 0)} usable before the ${reserve}-request reserve; the quota limit comes from this server's JSEARCH_MONTHLY_QUOTA.`),
+    row(`Schedule: ${result.schedule}`, `Next run: ${next.toUTCString()}`),
+  ];
+  if (result.setup_required) summary.unshift(row("Setup required", "Apply supabase/migrations/20261118000000_jsearch_ingestion_status.sql to record quota and runs."));
+  $("#ingestion-summary").replaceChildren(...summary);
+  showRows("#ingestion-runs", result.runs, (item) => row(
+    `${item.status} · ${item.trigger} · ${new Date(item.started_at).toLocaleString()}`,
+    `${item.requests_used} requests, ${item.postings_stored} postings stored${item.error ? ` · ${item.error}` : ""}`));
+  showRows("#ingestion-roles", result.roles, (item) => row(item.title || item.model_role,
+    item.last_ingested_at ? `Last fetched ${new Date(item.last_ingested_at).toLocaleString()}` : "Never fetched"));
+}
 async function loadPostings() {
   const result = await api(`/api/postings?search=${encode($("#posting-search").value)}&offset=${offsets.postings}`);
   $("#postings-page").textContent = `From ${offsets.postings + 1}`;
@@ -254,6 +271,7 @@ document.addEventListener("click", (event) => {
     if (name === "load-changes") await loadChanges();
     if (name === "export-changes") saveBlob(await api("/api/taxonomy-export", { download: true }), "esco-changes.json");
     if (name === "load-postings") { offsets.postings = 0; await loadPostings(); }
+    if (name === "load-ingestion") await loadIngestion();
     if (name === "postings-prev" || name === "postings-next") { offsets.postings = Math.max(0, offsets.postings + (name.endsWith("next") ? 50 : -50)); await loadPostings(); }
     if (name === "load-datasets") await loadDatasets();
     if (name === "load-resources") await loadResources();

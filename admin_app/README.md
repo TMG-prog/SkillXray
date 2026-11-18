@@ -62,6 +62,16 @@ after a page reload or token expiry.
   analysis backend with `SUPABASE_URL` and `SUPABASE_ANON_KEY`. Without it, existing built-in resources
   are used. With it enabled, an unavailable or invalid catalog causes analysis to fail rather than
   silently returning stale resources. Unmatched skills use the existing course-search fallback.
+- JSearch postings are fetched automatically, not from this console. The workflow
+  `.github/workflows/monthly-jsearch-ingest.yml` runs `Backend/app/ingest_postings.py` at 03:00 UTC on the
+  1st of each month (and on demand from the GitHub Actions tab). Apply
+  `supabase/migrations/20261118000000_jsearch_ingestion_status.sql`, then add the repository secrets
+  `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` and `RAPIDAPI_KEY`. Optional repository variables are
+  `JSEARCH_MONTHLY_QUOTA` (default 200), `QUOTA_RESERVE` (10) and `JSEARCH_COUNTRY` (us). The run stops
+  when the quota reserve is reached and fetches the least recently ingested roles first. **Datasets →
+  Monthly JSearch ingestion** shows quota use, recent runs and each role's last fetch; set the same
+  `JSEARCH_MONTHLY_QUOTA`/`QUOTA_RESERVE` in this server's environment so the quota figure matches.
+  Restart the analysis backend after a run to clear its process-lifetime caches.
 
 ## Tests
 

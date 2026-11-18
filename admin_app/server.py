@@ -390,6 +390,33 @@ async def import_postings(file: UploadFile = File(...), user_id: str = Depends(a
     return {"imported": len(result)}
 
 
+@app.get("/api/ingestion")
+def ingestion_status(user_id: str = Depends(admin_user), sb: Supabase = Depends(gateway)):
+    def attempt(name, params):
+        try:
+            return table(sb, "GET", name, params=params)
+        except HTTPException as exc:
+            if exc.status_code in (400, 404):
+                return None
+            raise
+
+    month = datetime.now(timezone.utc).strftime("%Y-%m")
+    usage = attempt("jsearch_usage", {"select": "requests", "month": f"eq.{month}"})
+    runs = attempt("ingestion_runs", {"select": "*", "order": "started_at.desc", "limit": 5})
+    roles = attempt("job_roles", {"select": "title,model_role,last_ingested_at", "model_role": "not.is.null",
+                                  "order": "last_ingested_at.asc.nullsfirst", "limit": 100})
+    return {
+        "month": month,
+        "quota": {"used": int(usage[0]["requests"]) if usage else 0,
+                  "limit": int(os.getenv("JSEARCH_MONTHLY_QUOTA", "200")),
+                  "reserve": int(os.getenv("QUOTA_RESERVE", "10"))},
+        "schedule": "03:00 UTC on the 1st of every month",
+        "runs": runs or [],
+        "roles": roles or [],
+        "setup_required": usage is None or runs is None,
+    }
+
+
 @app.delete("/api/postings/{posting_id}")
 def delete_posting(posting_id: str, user_id: str = Depends(admin_user), sb: Supabase = Depends(gateway)):
     return {"postings": require_row(table(sb, "DELETE", "job_postings", params={"id": f"eq.{uuid_value(posting_id)}"}))}

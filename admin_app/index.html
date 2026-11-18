@@ -60,6 +60,11 @@
       <section id="datasets" class="section" hidden>
         <div class="heading"><div><h2>Datasets</h2><p>Manage job postings and private dataset files.</p></div></div>
         <div class="notice">Posting changes are reflected in market profiles after the analysis backend is restarted. Dataset files are private and are not automatically used for training or analysis.</div>
+        <div class="panel"><div class="heading"><div><h3>Monthly JSearch ingestion</h3><p>Postings are fetched automatically on a schedule; this view is read-only.</p></div><button data-action="load-ingestion" class="secondary">Refresh</button></div>
+          <div id="ingestion-summary" class="list"></div>
+          <h4>Recent runs</h4><div id="ingestion-runs" class="list"></div>
+          <h4>Roles, least recently fetched first</h4><div id="ingestion-roles" class="list"></div>
+        </div>
         <div class="panel"><div class="heading"><h3>Job postings</h3><button data-action="load-postings" class="secondary">Search</button></div>
           <div class="toolbar"><input id="posting-search" type="search" placeholder="Search posting titles" aria-label="Search postings"><button data-action="postings-prev" class="secondary">Previous</button><span id="postings-page"></span><button data-action="postings-next" class="secondary">Next</button></div><div id="postings-list" class="list"></div>
           <form id="posting-import" class="inline-form"><label>Import UTF-8 CSV <input type="file" name="file" accept=".csv,text/csv" required></label><button type="submit">Import postings</button></form>
