@@ -3,6 +3,7 @@ import { StyleSheet, Text, TextInput, TouchableOpacity, View, Alert } from 'reac
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri } from 'expo-auth-session';
+import { useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase'; // Adjust path to your supabase client
 import { brand } from '../../components/ui/theme';
 
@@ -16,6 +17,7 @@ export const theme = {
 
 
 export default function AuthForm() {
+  const router = useRouter();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -104,6 +106,15 @@ export default function AuthForm() {
           onChangeText={setPassword}
           secureTextEntry
         />
+        {isLogin && (
+          <TouchableOpacity
+            onPress={() => router.push('/forgot-password')}
+            style={styles.forgotPassword}
+            accessibilityRole="button"
+          >
+            <Text style={styles.forgotPasswordText}>Forgot password?</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <TouchableOpacity 
@@ -145,6 +156,8 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, fontWeight: '700', color: theme.text, marginBottom: 8 },
   subtitle: { fontSize: 14, color: theme.subText, marginBottom: 32 },
   inputContainer: { width: '100%', gap: 16, marginBottom: 20 },
+  forgotPassword: { alignSelf: 'flex-end', marginTop: -8, paddingVertical: 4 },
+  forgotPasswordText: { color: theme.cyan, fontSize: 14, fontWeight: '600' },
   input: {
     width: '100%',
     backgroundColor: theme.card,

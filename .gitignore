@@ -4,3 +4,7 @@ dist
 .env
 .env.local
 *.log
+# Virtual Environments
+.venv310/
+venv/
+__pycache__/

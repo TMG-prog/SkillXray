@@ -17,3 +17,9 @@ app/src/main/java/inline/
 
 # Bundle artifacts
 *.jsbundle
+
+.venv/
+venv/
+node_modules/
+__pycache__/
+.env

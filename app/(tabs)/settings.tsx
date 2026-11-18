@@ -28,11 +28,8 @@ export default function SettingsScreen() {
   const [userId, setUserId] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [savingUsername, setSavingUsername] = useState(false);
-  const [savingPassword, setSavingPassword] = useState(false);
 
   const loadProfile = useCallback(async () => {
     setLoadingProfile(true);
@@ -117,31 +114,6 @@ export default function SettingsScreen() {
     }
   };
 
-  const handleChangePassword = async () => {
-    if (!password || password.length < 8) {
-      Alert.alert("Password too short", "Choose a password with at least 8 characters.");
-      return;
-    }
-    if (password !== confirmPassword) {
-      Alert.alert("Passwords don't match", "Check that both password fields are the same.");
-      return;
-    }
-
-    setSavingPassword(true);
-    try {
-      const { error } = await supabase.auth.updateUser({ password });
-      if (error) throw error;
-      setPassword("");
-      setConfirmPassword("");
-      Alert.alert("Password updated", "Your password has been changed.");
-    } catch (error) {
-      console.error("Could not update password:", error);
-      Alert.alert("Password update failed", "We couldn't change your password. Please try again.");
-    } finally {
-      setSavingPassword(false);
-    }
-  };
-
   return (
     <View style={styles.root}>
       <LinearGradient
@@ -206,41 +178,18 @@ export default function SettingsScreen() {
           <View style={styles.section}>
           <View style={styles.sectionHeading}>
             <Feather name="lock" size={18} color={brand.cyan} />
-            <Text style={styles.sectionTitle}>Reset password</Text>
+            <Text style={styles.sectionTitle}>Password</Text>
           </View>
-          <Text style={styles.helper}>Choose a new password for your signed-in account.</Text>
-          <TextInput
-            value={password}
-            onChangeText={setPassword}
-            placeholder="New password"
-            placeholderTextColor={brand.muted}
-            secureTextEntry
-            autoCapitalize="none"
-            style={styles.input}
-            accessibilityLabel="New password"
-          />
-          <TextInput
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            placeholder="Confirm new password"
-            placeholderTextColor={brand.muted}
-            secureTextEntry
-            autoCapitalize="none"
-            style={styles.input}
-            accessibilityLabel="Confirm new password"
-          />
           <Pressable
-            onPress={() => void handleChangePassword()}
-            disabled={savingPassword}
+            onPress={() => router.push({ pathname: "/reset-password", params: { mode: "settings" } })}
+            accessibilityRole="button"
+            accessibilityLabel="Open password reset screen"
             style={({ pressed }) => [
               styles.secondaryButton,
-              (pressed || savingPassword) && styles.pressed,
-              savingPassword && styles.disabled,
+              pressed && styles.pressed,
             ]}
           >
-            {savingPassword ? <ActivityIndicator color={brand.cyan} /> : (
-              <Text style={styles.secondaryButtonText}>Update password</Text>
-            )}
+            <Text style={styles.secondaryButtonText}>Reset password</Text>
           </Pressable>
           </View>
 

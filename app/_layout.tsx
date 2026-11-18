@@ -65,10 +65,10 @@ export default function RootLayout() {
 
         <Stack.Protected guard={!session}>
           <Stack.Screen name="login" />
+          <Stack.Screen name="forgot-password" />
         </Stack.Protected>
 
-        {/* Not guarded: the password-reset link opens this while signed out.
-            Remove this line if you haven't added app/reset-password.tsx. */}
+        {/* Recovery links must be able to open this route before a session exists. */}
         <Stack.Screen name="reset-password" />
       </Stack>
     </AppDataProvider>
