@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import type {
   AnalysisMarketInsights,
@@ -20,6 +21,10 @@ export function AnalysisVisualizations({
   marketInsights: AnalysisMarketInsights;
   view: "skills" | "market" | "pathways";
 }) {
+  const [relationshipFilter, setRelationshipFilter] = useState<"all" | AnalysisSkillRelationship["type"]>("all");
+  const visibleRelationships = relationshipFilter === "all"
+    ? relationships
+    : relationships.filter((relationship) => relationship.type === relationshipFilter);
   const topSkills = [...requirements]
     .sort((a, b) => b.weight - a.weight)
     .slice(0, 6);
@@ -230,8 +235,29 @@ export function AnalysisVisualizations({
           Curated prerequisites show learning order; ESCO links show broader skill families or related skills.
         </Text>
         {relationships.length ? (
-          <View style={styles.relationshipList}>
-            {relationships.slice(0, 16).map((relationship, index) => (
+          <>
+            <View style={styles.filterList}>
+              {([
+                { value: "all", label: "All" },
+                { value: "prerequisite", label: "Prerequisites" },
+                { value: "broader", label: "Broader" },
+                { value: "related", label: "Related" },
+              ] as const).map((filter) => (
+                <Pressable
+                  key={filter.value}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: relationshipFilter === filter.value }}
+                  onPress={() => setRelationshipFilter(filter.value)}
+                  style={[styles.filterButton, relationshipFilter === filter.value && styles.filterSelected]}
+                >
+                  <Text style={[styles.filterText, relationshipFilter === filter.value && styles.filterSelectedText]}>
+                    {filter.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+            {visibleRelationships.length ? <View style={styles.relationshipList}>
+            {visibleRelationships.map((relationship, index) => (
               <View key={`${relationship.type}:${relationship.source}:${relationship.target}:${index}`} style={styles.relationshipRow}>
                 <View style={styles.relationshipNames}>
                   <Text style={styles.relationshipSkill} numberOfLines={2}>
@@ -254,11 +280,11 @@ export function AnalysisVisualizations({
                 </View>
               </View>
             ))}
-          </View>
+            </View> : <Text style={styles.emptyText}>No relationships of this type are available for this role.</Text>}
+          </>
         ) : (
           <Text style={styles.emptyText}>
-            No relationships are mapped for these requirements yet. Add curated prerequisites to the backend
-            configuration to show explicit learning order.
+            No skill relationships are available for these requirements yet.
           </Text>
         )}
       </View>}
@@ -371,6 +397,11 @@ const styles = StyleSheet.create({
   emergenceSkill: { flex: 1, gap: 3 },
   emergenceMovement: { fontSize: 11, fontWeight: "600" },
   relationshipList: { gap: 8 },
+  filterList: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 },
+  filterButton: { borderWidth: 1, borderColor: brand.border, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 },
+  filterSelected: { backgroundColor: brand.cyan, borderColor: brand.cyan },
+  filterText: { color: brand.muted, fontSize: 12, fontWeight: "600" },
+  filterSelectedText: { color: brand.onGradient },
   roiGap: { backgroundColor: brand.bg, borderRadius: 10, padding: 11, gap: 3 },
   relationshipRow: {
     backgroundColor: brand.bg,

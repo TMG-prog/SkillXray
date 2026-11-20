@@ -61,7 +61,8 @@ index from another encoder is not compatible.
    Resume coverage follows the notebook's binary `covered` result; its per-skill reason, evidence, and gap confidence
    are also returned. Learning-plan gaps are ranked by their marginal gain to the same weighted CRI; the estimate
    accounts for ESCO descendants that can satisfy broader requirements and avoids counting those requirements twice.
-   The plan also groups related ESCO skills, orders curated prerequisites first, and links each step to a course,
+   The plan also groups related ESCO skills, orders curated prerequisites first (broader and related links do not
+   establish learning prerequisites), and links each step to a course,
    certification, or targeted course search. When extracted resume skills overlap role postings, co-occurrence evidence
    compares gap frequency in those postings with the role-wide rate; this is posting evidence, not candidate outcome
    data. Database-backed analysis also returns `market_intelligence`, computed from URI-linked skills in the last

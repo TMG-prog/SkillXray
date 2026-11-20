@@ -72,6 +72,7 @@ def test_analyze_adapts_notebook_result_to_mobile_contract():
     }
     assert [step["skill"] for step in result["learning_plan"]] == ["Python", "Kubernetes"]
     assert result["learning_plan"][0]["marginal_gain_pp"] == 30.0
+    assert result["learning_plan"][0]["prerequisites"] == ["Programming"]
     assert "Programming" in result["learning_plan"][0]["cluster_skills"]
     assert all(step["resource"]["url"] for step in result["learning_plan"])
     assert result["market_delta"]["high_roi_gaps"] == [
@@ -189,6 +190,20 @@ def test_learning_plan_obeys_prerequisites_before_impact_order():
 
     assert [step["skill"] for step in result["learning_plan"]] == ["Python", "Kubernetes"]
     assert result["learning_plan"][1]["prerequisites"] == ["Python"]
+
+
+def test_learning_plan_does_not_treat_broader_skill_as_prerequisite():
+    pipeline = NotebookPipeline(FakeNotebookEngine())
+    profile, _ = FakeNotebookEngine.get_profile("software")
+    requirements = [
+        {"skill": "Programming", "uri": "parent", "weight": 0.1, "credit": 0},
+        {"skill": "Python", "uri": "child", "weight": 0.9, "credit": 0},
+    ]
+
+    plan = pipeline._learning_plan(profile, requirements, [("parent", "child", "broader")], {})
+
+    assert plan[0]["skill"] == "Python"
+    assert plan[0]["prerequisites"] == []
 
 
 def test_analysis_includes_market_intelligence_from_profile_provider():

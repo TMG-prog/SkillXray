@@ -1,0 +1,32 @@
+name: Monthly JSearch ingestion
+
+on:
+  schedule:
+    - cron: "0 3 1 * *"   # 03:00 UTC on the 1st of every month
+  workflow_dispatch:
+
+concurrency:
+  group: jsearch-ingestion
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -r Backend/app/requirements.txt
+      - name: Fetch postings from JSearch
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+          JSEARCH_MONTHLY_QUOTA: ${{ vars.JSEARCH_MONTHLY_QUOTA || '200' }}
+          QUOTA_RESERVE: ${{ vars.QUOTA_RESERVE || '10' }}
+          JSEARCH_COUNTRY: ${{ vars.JSEARCH_COUNTRY || 'us' }}
+          TRIGGER: ${{ github.event_name == 'schedule' && 'scheduled' || 'manual' }}
+        # The quota guard stops the run once the monthly reserve is reached; stalest roles go first.
+        run: python Backend/app/ingest_postings.py --max-roles 100 --trigger "$TRIGGER"

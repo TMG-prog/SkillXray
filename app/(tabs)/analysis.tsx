@@ -10,6 +10,7 @@ import { brand, colors, SERIF } from "@/components/ui/theme";
 import { AnalysisVisualizations } from "@/features/skill-analysis/AnalysisVisualizations";
 import { CareerPivotSimulator } from "@/features/skill-analysis/CareerPivotSimulator";
 import { downloadAnalysisReport } from "@/features/skill-analysis/downloadAnalysisReport";
+import { RecommendationList } from "@/features/recommendations/RecommendationList";
 
 type Severity = "high" | "medium" | "low";
 
@@ -290,13 +291,16 @@ export default function AnalysisScreen() {
           )}
 
           {activeTab === "pathways" && (
-            <AnalysisVisualizations
-              view="pathways"
-              requirements={analysis.requirements}
-              relationships={analysis.relationships}
-              covered={analysis.covered}
-              marketInsights={analysis.marketInsights}
-            />
+            <>
+              <RecommendationList roadmap />
+              <AnalysisVisualizations
+                view="pathways"
+                requirements={analysis.requirements}
+                relationships={analysis.relationships}
+                covered={analysis.covered}
+                marketInsights={analysis.marketInsights}
+              />
+            </>
           )}
           {activeTab === "market" && (
             <AnalysisVisualizations

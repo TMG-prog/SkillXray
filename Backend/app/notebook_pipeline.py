@@ -261,9 +261,9 @@ class NotebookPipeline:
                 cluster_neighbours[source].add(target)
                 cluster_neighbours[target].add(source)
                 if (
-                    source in gap_uris
+                    source in profile_uris
                     and target in gap_uris
-                    and relationship in {"prerequisite", "broader"}
+                    and relationship == "prerequisite"
                 ):
                     dependencies[target].add(source)
 

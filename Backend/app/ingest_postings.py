@@ -13,6 +13,8 @@ Optional: JSEARCH_COUNTRY (default us), JSEARCH_MONTHLY_QUOTA (200), QUOTA_RESER
 Examples:
   python ingest_postings.py --roles software --target 40        # smoke test: one role, about 4-7 requests
   python ingest_postings.py --max-roles 3                       # the 3 stalest roles
+
+Monthly schedule: .github/workflows/monthly-jsearch-ingest.yml runs this on the 1st of each month.
 """
 import argparse, datetime as dt, hashlib, logging, math, os, re, sys, time
 import requests
@@ -239,6 +241,30 @@ def ingest_role(sb, cfg, row, catalogue, target, dry_run=False):
     return stats
 
 
+# ----------------------------------------------------------------------------- run log (shown read-only in the admin console)
+def start_run(sb, trigger):
+    try:
+        return sb.table("ingestion_runs").insert({"trigger": trigger}).execute().data[0]["id"]
+    except Exception as e:                                          # the log must never block ingestion
+        log.warning("could not record the run (apply the ingestion_runs migration): %s", e)
+        return None
+
+
+def finish_run(sb, run_id, results, failed, error=None):
+    if not run_id:
+        return
+    status = "failed" if error else "partial" if failed or any(s.get("quota_hit") for s in results) else "success"
+    try:
+        sb.table("ingestion_runs").update({
+            "finished_at": dt.datetime.now(dt.timezone.utc).isoformat(), "status": status,
+            "requests_used": sum(s["requests"] for s in results), "postings_stored": sum(s["stored"] for s in results),
+            "roles": [{k: s.get(k) for k in ("role", "had", "requests", "stored", "quota_hit")} for s in results] + failed,
+            "error": error,
+        }).eq("id", run_id).execute()
+    except Exception as e:
+        log.warning("could not update the run record: %s", e)
+
+
 # ----------------------------------------------------------------------------- main
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -246,6 +272,7 @@ def main():
     ap.add_argument("--max-roles", type=int, default=3, help="how many roles to process when --roles is not given")
     ap.add_argument("--target", type=int, default=100, help="recent postings wanted per role (about 10 postings per request)")
     ap.add_argument("--dry-run", action="store_true", help="fetch and count quota, but write nothing to job_postings / job_roles")
+    ap.add_argument("--trigger", default="manual", help="label stored with the run record, e.g. scheduled")
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
 
@@ -266,13 +293,17 @@ def main():
         todo = sorted(catalogue, key=lambda r: (r["last_ingested_at"] is not None, r["last_ingested_at"] or ""))[:args.max_roles]
 
     log.info("quota used this month: %d/%d (reserve %d) | roles: %s", quota_used(sb), cfg["quota"], cfg["reserve"], [r["model_role"] for r in todo])
+    run_id = None if args.dry_run else start_run(sb, args.trigger)
+    results, failed = [], []
     for row in todo:
         try:
-            ingest_role(sb, cfg, row, catalogue, args.target, args.dry_run)
+            results.append(ingest_role(sb, cfg, row, catalogue, args.target, args.dry_run))
         except QuotaExhausted as e:
             log.warning("stopping: %s", e); break
         except Exception as e:                                      # one bad role must not stop the others
             log.error("[%s] failed: %s: %s", row["model_role"], type(e).__name__, e)
+            failed.append({"role": row["model_role"], "error": f"{type(e).__name__}: {e}"[:300]})
+    finish_run(sb, run_id, results, failed, "every role failed" if failed and not results else None)
     log.info("quota used this month: %d/%d", quota_used(sb), cfg["quota"])
 
 
