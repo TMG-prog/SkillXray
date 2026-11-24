@@ -18,8 +18,14 @@ def test_catalog_pagination_and_validation(monkeypatch):
     monkeypatch.setenv("SUPABASE_URL", "https://example.com")
     monkeypatch.setenv("SUPABASE_ANON_KEY", "anon-key")
     calls = []
-    entry = {"title": "Learn Python", "provider": "Example", "url": "https://example.com/course",
-             "keywords": [" Python "]}
+    entry = {
+        "title": "Learn Python",
+        "provider": "Example",
+        "url": "https://example.com/course",
+        "keywords": [" Python "],
+        "trust_signals": ["university_backed"],
+        "trust_evidence_url": "https://example.com/evidence",
+    }
 
     def handle(request):
         calls.append(request)
@@ -33,9 +39,43 @@ def test_catalog_pagination_and_validation(monkeypatch):
     result = learning_catalog.published_resources()
     assert len(result) == 501
     assert result[0][0] == ("python",)
+    assert result[0][4] == ("university_backed",)
+    assert result[0][5] == "https://example.com/evidence"
     assert len(calls) == 2
 
     entry["url"] = "javascript:alert(1)"
+    with pytest.raises(ValueError, match="Invalid"):
+        learning_catalog.published_resources()
+
+
+@pytest.mark.parametrize(
+    ("trust_signals", "trust_evidence_url"),
+    [
+        (["nita_accredited"], None),
+        (["unverified_claim"], "https://example.com/evidence"),
+        (["industry_certification"], "javascript:alert(1)"),
+    ],
+)
+def test_catalog_requires_supported_trust_signals_with_evidence(
+    monkeypatch, trust_signals, trust_evidence_url,
+):
+    monkeypatch.setenv("LEARNING_RESOURCES_CATALOG", "1")
+    monkeypatch.setenv("SUPABASE_URL", "https://example.com")
+    monkeypatch.setenv("SUPABASE_ANON_KEY", "anon-key")
+    entry = {
+        "title": "Learn Python",
+        "provider": "Example",
+        "url": "https://example.com/course",
+        "keywords": ["python"],
+        "trust_signals": trust_signals,
+        "trust_evidence_url": trust_evidence_url,
+    }
+    original_client = httpx.Client
+    monkeypatch.setattr(learning_catalog.httpx, "Client",
+                        lambda **kwargs: original_client(
+                            transport=httpx.MockTransport(lambda request: httpx.Response(200, json=[entry])),
+                            **kwargs,
+                        ))
     with pytest.raises(ValueError, match="Invalid"):
         learning_catalog.published_resources()
 

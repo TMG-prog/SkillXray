@@ -58,8 +58,11 @@ index from another encoder is not compatible.
    anon key in the backend environment as `SUPABASE_ANON_KEY`; the app sends the signed-in user's access token.
    The live target-role picker reads the authenticated `/roles` endpoint, so it only offers roles this scorer can analyze.
    Demo mode continues to use the Supabase role catalog.
-   Resume coverage follows the notebook's binary `covered` result; its per-skill reason, evidence, and gap confidence
-   are also returned. Learning-plan gaps are ranked by their marginal gain to the same weighted CRI; the estimate
+   Resume coverage starts from the notebook's `covered` result, then applies section-aware credit: Education-only
+   evidence earns half credit and stays in the gap list, while evidence also found in Experience or Projects earns full
+   credit. If no recognized headings are found, the existing scoring is retained and the response includes a warning.
+   Per-skill evidence sections, reasons, and gap confidence are returned. Learning-plan gaps are ranked by their
+   remaining marginal gain to the same weighted CRI; the estimate
    accounts for ESCO descendants that can satisfy broader requirements and avoids counting those requirements twice.
    The plan also groups related ESCO skills, orders curated prerequisites first (broader and related links do not
    establish learning prerequisites), and links each step to a course,

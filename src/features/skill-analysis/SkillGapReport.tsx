@@ -57,6 +57,9 @@ export function SkillGapReport() {
             <View style={styles.track}>
               <View style={[styles.fill, { width: `${Math.max(0, Math.min(1, gap.fill)) * 100}%` }]} />
             </View>
+            {gap.evidenceSection === "education" && (
+              <Text style={styles.evidenceNote}>Education-only evidence receives 50% readiness credit.</Text>
+            )}
           </View>
         ))}
       </View>
@@ -127,6 +130,7 @@ const styles = StyleSheet.create({
   severityText: { fontSize: 13, fontWeight: "600", textTransform: "lowercase" },
   track: { height: 6, borderRadius: 999, backgroundColor: "rgba(255,255,255,0.1)", overflow: "hidden" },
   fill: { height: "100%", borderRadius: 999, backgroundColor: ACCENT },
+  evidenceNote: { fontSize: 12, color: brand.muted, marginTop: 6 },
   recButton: { marginTop: 8, backgroundColor: "rgba(255,255,255,0.08)", borderRadius: 999, paddingVertical: 14, alignItems: "center" },
   recButtonText: { color: brand.text, fontWeight: "700", fontSize: 15 },
 

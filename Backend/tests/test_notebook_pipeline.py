@@ -64,6 +64,7 @@ def test_analyze_adapts_notebook_result_to_mobile_contract():
     assert result["covered"][0]["cv_highlight"] == "programming"
     assert result["gaps"][0]["credit"] == 0.0
     assert result["gaps"][0]["gap_confidence"] == 0.8
+    assert any("section headings were not detected" in warning for warning in result["warnings"])
     assert result["timings_ms"] == {"extract": 100, "link": 20, "match": 30}
     assert result["skill_relationships"][0] == {
         "source": "Programming",
@@ -72,6 +73,10 @@ def test_analyze_adapts_notebook_result_to_mobile_contract():
     }
     assert [step["skill"] for step in result["learning_plan"]] == ["Python", "Kubernetes"]
     assert result["learning_plan"][0]["marginal_gain_pp"] == 30.0
+    assert result["learning_plan"][0]["resource"]["trust_signals"] == ["university_backed"]
+    assert result["learning_plan"][0]["resource"]["trust_evidence_url"] == (
+        "https://www.coursera.org/specializations/python"
+    )
     assert result["learning_plan"][0]["prerequisites"] == ["Programming"]
     assert "Programming" in result["learning_plan"][0]["cluster_skills"]
     assert all(step["resource"]["url"] for step in result["learning_plan"])
@@ -96,6 +101,36 @@ def test_analyze_adapts_notebook_result_to_mobile_contract():
     assert result["market_emergence"] is None
 
 
+def test_education_only_evidence_remains_a_gap_with_partial_readiness_credit():
+    class EducationEvidenceEngine(FakeNotebookEngine):
+        @staticmethod
+        def score_cv(text, role):
+            result = FakeNotebookEngine.score_cv(text, role)
+            result["table"]["credit"] = result["table"]["covered"].astype(float)
+            result["table"]["evidence_section"] = None
+            result["table"].loc[1, "covered"] = True
+            result["table"].loc[1, "credit"] = 0.5
+            result["table"].loc[1, "evidence_section"] = "education"
+            result["readiness"] = 0.65
+            result["resume_sections"] = ["education"]
+            return result
+
+    result = NotebookPipeline(EducationEvidenceEngine(), {"child": ["parent"]}).analyze(
+        "Studied Python", "software"
+    )
+
+    assert result["readiness"] == 65.0
+    assert result["n_covered"] == 1
+    assert [gap["skill"] for gap in result["gaps"]] == ["Python", "Kubernetes"]
+    assert result["gaps"][0]["credit"] == 0.5
+    assert result["gaps"][0]["evidence_section"] == "education"
+    assert not any("section headings were not detected" in warning for warning in result["warnings"])
+    plan_gain = {step["skill"]: step["marginal_gain_pp"] for step in result["learning_plan"]}
+    roi_gain = {gap["skill"]: gap["readiness_gain_pp"] for gap in result["market_delta"]["high_roi_gaps"]}
+    assert plan_gain["Python"] == 15.0
+    assert roi_gain["Python"] == 15.0
+
+
 def test_analyze_unknown_role_raises_role_not_found():
     pipeline = NotebookPipeline(FakeNotebookEngine())
 
@@ -105,11 +140,14 @@ def test_analyze_unknown_role_raises_role_not_found():
 
 def test_analysis_uses_configured_learning_catalog(monkeypatch):
     monkeypatch.setattr("app.notebook_pipeline.published_resources", lambda: (
-        (("python",), "Custom Python", "Example", "https://example.com/python"),
+        (("python",), "Custom Python", "Example", "https://example.com/python",
+         ("university_backed",), "https://example.com/evidence"),
     ))
     result = NotebookPipeline(FakeNotebookEngine()).analyze("resume", "software")
     assert result["learning_plan"][0]["resource"] == {
         "title": "Custom Python", "provider": "Example", "url": "https://example.com/python",
+        "trust_signals": ["university_backed"],
+        "trust_evidence_url": "https://example.com/evidence",
     }
 
 

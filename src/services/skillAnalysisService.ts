@@ -3,7 +3,7 @@ import Constants from "expo-constants";
 import { Platform } from "react-native";
 import { decode } from "base64-arraybuffer";
 import { supabase } from "@/lib/supabase";
-import type { SkillAnalysis, SkillGap } from "@/types";
+import { COURSE_TRUST_SIGNALS, type CourseTrustSignal, type SkillAnalysis, type SkillGap } from "@/types";
 
 export interface PipelineAnalysis {
   demo?: boolean;
@@ -74,6 +74,7 @@ export interface PipelineSkill {
   evidence?: string;
   cv_evidence?: string;
   cv_highlight?: string;
+  evidence_section?: string | null;
   gap_confidence?: number;
 }
 
@@ -100,7 +101,13 @@ export interface PipelineLearningPlanStep {
   cluster_skills: string[];
   covered_by: string | null;
   hiring_evidence: PipelineHiringEvidence | null;
-  resource: { title: string; provider: string; url: string };
+  resource: {
+    title: string;
+    provider: string;
+    url: string;
+    trust_signals?: CourseTrustSignal[];
+    trust_evidence_url?: string | null;
+  };
 }
 
 export interface PipelineHiringEvidence {
@@ -290,6 +297,8 @@ function createMockAnalysis(role: string): PipelineAnalysis {
           title: "AWS Cloud Practitioner Essentials",
           provider: "AWS Skill Builder",
           url: "https://skillbuilder.aws/learn",
+          trust_signals: [],
+          trust_evidence_url: null,
         },
       },
       {
@@ -306,6 +315,8 @@ function createMockAnalysis(role: string): PipelineAnalysis {
           title: "Machine Learning Specialization",
           provider: "Coursera · DeepLearning.AI and Stanford",
           url: "https://www.coursera.org/specializations/machine-learning-introduction",
+          trust_signals: ["university_backed"],
+          trust_evidence_url: "https://www.coursera.org/specializations/machine-learning-introduction",
         },
       },
     ],
@@ -408,6 +419,9 @@ function isPipelineAnalysis(value: unknown): value is PipelineAnalysis {
     && (item.evidence === undefined || typeof item.evidence === "string")
     && (item.cv_evidence === undefined || typeof item.cv_evidence === "string")
     && (item.cv_highlight === undefined || typeof item.cv_highlight === "string")
+    && (item.evidence_section === undefined
+      || item.evidence_section === null
+      || typeof item.evidence_section === "string")
     && (item.gap_confidence === undefined || typeof item.gap_confidence === "number");
   const isHighRoiGap = (item: unknown) =>
     isRecord(item)
@@ -440,7 +454,15 @@ function isPipelineAnalysis(value: unknown): value is PipelineAnalysis {
     && isRecord(item.resource)
     && typeof item.resource.title === "string"
     && typeof item.resource.provider === "string"
-    && typeof item.resource.url === "string";
+    && typeof item.resource.url === "string"
+    && (item.resource.trust_signals === undefined
+      || (Array.isArray(item.resource.trust_signals)
+        && item.resource.trust_signals.every(isCourseTrustSignal)))
+    && (item.resource.trust_evidence_url === undefined
+      || item.resource.trust_evidence_url === null
+      || isHttpUrl(item.resource.trust_evidence_url))
+    && (!(Array.isArray(item.resource.trust_signals) && item.resource.trust_signals.length > 0)
+      || isHttpUrl(item.resource.trust_evidence_url));
   const isRelationship = (item: unknown) =>
     isRecord(item)
     && typeof item.source === "string"
@@ -475,6 +497,14 @@ function isPipelineAnalysis(value: unknown): value is PipelineAnalysis {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+function isCourseTrustSignal(value: unknown): value is CourseTrustSignal {
+  return COURSE_TRUST_SIGNALS.some((signal) => signal === value);
+}
+
+function isHttpUrl(value: unknown): value is string {
+  return typeof value === "string" && /^https?:\/\/\S+$/i.test(value);
 }
 
 /** The skills saved for a resume, as plain names, A to Z. */

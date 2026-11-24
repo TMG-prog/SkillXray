@@ -483,6 +483,10 @@ class Resource(BaseModel):
     keywords: list[str] = Field(min_length=1, max_length=30)
     priority: int = 100
     published: bool = False
+    trust_signals: list[Literal[
+        "nita_accredited", "university_backed", "free_open_access", "industry_certification"
+    ]] = Field(default_factory=list, max_length=4)
+    trust_evidence_url: str | None = Field(default=None, max_length=2000)
 
 
 def clean_resource(body: Resource):
@@ -495,6 +499,16 @@ def clean_resource(body: Resource):
     data["keywords"] = list(dict.fromkeys(word.strip().casefold() for word in data["keywords"] if word.strip()))
     if not data["keywords"]:
         raise HTTPException(422, "At least one keyword is required.")
+    data["trust_signals"] = list(dict.fromkeys(data["trust_signals"]))
+    evidence_url = (data["trust_evidence_url"] or "").strip()
+    parsed_evidence = urlsplit(evidence_url) if evidence_url else None
+    if data["trust_signals"] and (
+        parsed_evidence is None
+        or parsed_evidence.scheme not in ("http", "https")
+        or not parsed_evidence.netloc
+    ):
+        raise HTTPException(422, "Trust signals require a valid HTTP(S) evidence URL.")
+    data["trust_evidence_url"] = evidence_url or None
     return data
 
 

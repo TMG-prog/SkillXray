@@ -249,6 +249,7 @@ import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
 from app.matching_rules import coverage_decision, has_explicit_tool_mention, is_certificate_text
+from app.resume_sections import apply_section_credit, parse_resume_sections, section_for_text
 
 # ================================================================
 # 1. CONFIGURATION
@@ -1859,18 +1860,30 @@ def run_v2(text, role, profile=None):
         _reload_v2_config()
     role = {r.lower(): r for r in PROFILE_OF}.get(role.strip().lower(), role)
     started = time.perf_counter()
+    sections = parse_resume_sections(text)
     raw = extract_docs([text], ['live'], EXTRACTION_CFG)
     extracted_at = time.perf_counter()
     sp = standardise_spans(raw) if len(raw) else None
+    if sp is not None:
+        sp['resume_section'] = [
+            section_for_text(str(unit), sections)
+            for unit in sp['unit'].astype(str)
+        ]
     cand = collapse_to_skills(sp) if sp is not None else EMPTY_SKILLS
     linked_at = time.perf_counter()
     prof = (PROFILE_OF[role] if profile is None else profile).reset_index(drop=True)
     tab = match_v2(cand, sp, text, prof, phrases=_posting_phrases(role))
+    tab = apply_section_credit(tab, cand, sp, sections)
     matched_at = time.perf_counter()
-    ready = float((tab['weight'] * tab['covered']).sum() / tab['weight'].sum())
-    return {'have': tab.loc[tab['covered'], 'esco_label'].tolist(),
-            'missing': [{'skill': l, 'confidence': c} for l, c in zip(tab.loc[~tab['covered'], 'esco_label'], tab.loc[~tab['covered'], 'gap_confidence'])],
+    ready = float((tab['weight'] * tab['credit']).sum() / tab['weight'].sum())
+    return {'have': tab.loc[tab['credit'] >= 1.0, 'esco_label'].tolist(),
+            'missing': [
+                {'skill': row.esco_label, 'confidence': row.gap_confidence,
+                 'credit': float(row.credit), 'evidence_section': row.evidence_section}
+                for row in tab.loc[tab['credit'] < 1.0].itertuples()
+            ],
             'readiness': round(ready, 3), 'table': tab,
+            'resume_sections': list(dict.fromkeys(category for category, _ in sections)),
             'extracted_skills': [
                 {'skill': r.esco_label, 'uri': r.esco_uri, 'in_esco': bool(r.in_esco), 'mentions': int(r.mentions)}
                 for r in cand.itertuples()

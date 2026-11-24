@@ -47,7 +47,25 @@ export interface LearningResource {
   title: string;
   provider: string;
   url: string;
+  trustSignals?: CourseTrustSignal[];
+  trustEvidenceUrl?: string | null;
 }
+
+export const COURSE_TRUST_SIGNALS = [
+  "nita_accredited",
+  "university_backed",
+  "free_open_access",
+  "industry_certification",
+] as const;
+
+export type CourseTrustSignal = typeof COURSE_TRUST_SIGNALS[number];
+
+export const COURSE_TRUST_SIGNAL_LABELS: Record<CourseTrustSignal, string> = {
+  nita_accredited: "NITA-accredited",
+  university_backed: "University-backed",
+  free_open_access: "Free/Open Access",
+  industry_certification: "Industry Certification",
+};
 
 export interface Recommendation {
   id: string;

@@ -61,7 +61,11 @@ after a page reload or token expiry.
 - Published resources are used by analysis only after setting `LEARNING_RESOURCES_CATALOG=1` on the
   analysis backend with `SUPABASE_URL` and `SUPABASE_ANON_KEY`. Without it, existing built-in resources
   are used. With it enabled, an unavailable or invalid catalog causes analysis to fail rather than
-  silently returning stale resources. Unmatched skills use the existing course-search fallback.
+  silently returning stale resources. Unmatched skills use the existing course-search fallback. Apply
+  `supabase/migrations/20261124160000_learning_resource_trust_signals.sql` before using trust metadata.
+  Administrators can add supported trust signals in the resource form; every signal requires an official
+  HTTP(S) evidence URL. Add NITA accreditation only after checking the relevant course/provider against
+  an authoritative NITA source. Unverified resources remain visible but display no trust badge.
 - JSearch postings are fetched automatically, not from this console. The workflow
   `.github/workflows/monthly-jsearch-ingest.yml` runs `Backend/app/ingest_postings.py` at 03:00 UTC on the
   1st of each month (and on demand from the GitHub Actions tab). Apply

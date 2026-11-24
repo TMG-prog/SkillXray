@@ -238,19 +238,33 @@ $("#dataset-upload").addEventListener("submit", (event) => {
 });
 async function loadResources() {
   const result = await api("/api/resources");
-  showRows("#resources-list", result.resources, (item) => row(item.title, `${item.provider} · ${item.published ? "Published" : "Draft"} · ${item.keywords.join(", ")}`, [
+  const signalLabels = {
+    nita_accredited: "NITA-accredited",
+    university_backed: "University-backed",
+    free_open_access: "Free/Open Access",
+    industry_certification: "Industry Certification",
+  };
+  showRows("#resources-list", result.resources, (item) => {
+    const signals = (item.trust_signals ?? []).map((signal) => signalLabels[signal] ?? signal);
+    const trustSummary = signals.length
+      ? `${signals.join(", ")} · Evidence: ${item.trust_evidence_url}`
+      : "No verified trust signals";
+    return row(item.title, `${item.provider} · ${item.published ? "Published" : "Draft"} · ${item.keywords.join(", ")} · ${trustSummary}`, [
     action("Edit", () => setForm($("#resource-form"), item)),
     action("Delete", async () => {
       if (!confirm(`Delete resource "${item.title}"?`)) return;
       await api(`/api/resources/${encode(item.id)}`, { method: "DELETE" }); await loadResources(); status("Resource deleted.");
     }, true),
-  ]));
+    ]);
+  });
 }
 $("#resource-form").addEventListener("submit", (event) => {
   event.preventDefault();
   run(async () => {
     const data = formValues(event.target); const id = data.id; delete data.id;
     data.keywords = data.keywords.split(",").map((item) => item.trim()).filter(Boolean);
+    data.trust_signals = data.trust_signals.split(",").map((item) => item.trim()).filter(Boolean);
+    data.trust_evidence_url = data.trust_evidence_url.trim() || null;
     data.priority = Number(data.priority); data.published = event.target.elements.published.checked;
     await api(id ? `/api/resources/${encode(id)}` : "/api/resources", { method: id ? "PUT" : "POST", json: data });
     event.target.reset(); await loadResources(); status("Resource saved.");

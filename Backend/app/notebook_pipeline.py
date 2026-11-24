@@ -18,27 +18,35 @@ from .pipeline import RoleNotFound
 
 LEARNING_RESOURCES = (
     (("python",), "Python for Everybody Specialization", "Coursera · University of Michigan",
+     "https://www.coursera.org/specializations/python", ("university_backed",),
      "https://www.coursera.org/specializations/python"),
     (("sql", "database"), "SQL for Data Science", "Coursera · University of California, Davis",
+     "https://www.coursera.org/learn/sql-for-data-science", ("university_backed",),
      "https://www.coursera.org/learn/sql-for-data-science"),
     (("docker",), "Docker for the Absolute Beginner", "KodeKloud",
-     "https://kodekloud.com/courses/docker-for-the-absolute-beginner-course/"),
+     "https://kodekloud.com/courses/docker-for-the-absolute-beginner-course/", (), None),
     (("kubernetes",), "Certified Kubernetes Application Developer (CKAD)", "Linux Foundation",
+     "https://training.linuxfoundation.org/certification/certified-kubernetes-application-developer-ckad/",
+     ("industry_certification",),
      "https://training.linuxfoundation.org/certification/certified-kubernetes-application-developer-ckad/"),
     (("terraform",), "Terraform Associate learning path", "HashiCorp",
+     "https://developer.hashicorp.com/terraform/tutorials/certification-003", ("industry_certification",),
      "https://developer.hashicorp.com/terraform/tutorials/certification-003"),
     (("aws", "amazon web services"), "AWS Cloud Practitioner Essentials", "AWS Skill Builder",
-     "https://skillbuilder.aws/learn"),
+     "https://skillbuilder.aws/learn", (), None),
     (("azure",), "Azure Fundamentals learning path", "Microsoft Learn",
+     "https://learn.microsoft.com/training/paths/azure-fundamentals-describe-cloud-concepts/",
+     ("free_open_access",),
      "https://learn.microsoft.com/training/paths/azure-fundamentals-describe-cloud-concepts/"),
     (("google cloud", "gcp"), "Google Cloud learning paths", "Google Cloud Skills Boost",
-     "https://www.cloudskillsboost.google/paths"),
+     "https://www.cloudskillsboost.google/paths", (), None),
     (("project management",), "Google Project Management Professional Certificate", "Coursera · Google",
-     "https://www.coursera.org/professional-certificates/google-project-management"),
+     "https://www.coursera.org/professional-certificates/google-project-management", (), None),
     (("data analytics", "data analysis"), "Google Data Analytics Professional Certificate", "Coursera · Google",
-     "https://www.coursera.org/professional-certificates/google-data-analytics"),
+     "https://www.coursera.org/professional-certificates/google-data-analytics", (), None),
     (("machine learning", "artificial intelligence", "deep learning"),
      "Machine Learning Specialization", "Coursera · DeepLearning.AI and Stanford",
+     "https://www.coursera.org/specializations/machine-learning-introduction", ("university_backed",),
      "https://www.coursera.org/specializations/machine-learning-introduction"),
 )
 
@@ -113,11 +121,12 @@ class NotebookPipeline:
             if profile_row is None:
                 raise ValueError(f"Notebook scorer returned an unknown role requirement URI: {row.esco_uri}")
             frequency = _optional_number(profile_row.get("freq"))
+            credit = float(getattr(row, "credit", 1.0 if bool(row.covered) else 0.0))
             requirements.append({
                 "skill": str(row.esco_label),
                 "uri": str(profile_row["esco_uri"]),
                 "weight": round(float(row.weight), 4),
-                "credit": 1.0 if bool(row.covered) else 0.0,
+                "credit": round(credit, 3),
                 "frequency": frequency,
                 "reason": str(row.reason),
                 "evidence": str(row.closest_evidence),
@@ -126,15 +135,20 @@ class NotebookPipeline:
                     str(getattr(row, "cv_evidence", "")),
                 ),
                 "cv_highlight": str(getattr(row, "cv_highlight", "")),
+                "evidence_section": getattr(row, "evidence_section", None),
                 "gap_confidence": round(float(row.gap_confidence), 2),
             })
 
-        covered = [skill for skill in requirements if skill["credit"] == 1.0]
-        gaps = [skill for skill in requirements if skill["credit"] == 0.0]
+        covered = [skill for skill in requirements if skill["credit"] >= 1.0]
+        gaps = [skill for skill in requirements if skill["credit"] < 1.0]
         profile_info = result["profile"]
         warnings = []
         if profile_info.get("reason"):
             warnings.append(f"Using the static role profile: {profile_info['reason']}.")
+        if not result.get("resume_sections"):
+            warnings.append(
+                "Resume section headings were not detected, so section-based evidence weighting was not applied."
+            )
         if len(result.get("extracted_skills", [])) < 5:
             warnings.append(
                 "Very few skills were found in this resume. If it is a scanned or image-heavy PDF, "
@@ -250,8 +264,8 @@ class NotebookPipeline:
         labels = dict(zip(profile["esco_uri"].astype(str), profile["esco_label"].astype(str)))
         requirements_by_uri = {item["uri"]: item for item in requirements}
         profile_uris = set(requirements_by_uri)
-        gap_uris = {item["uri"] for item in requirements if item["credit"] == 0}
-        satisfied = {item["uri"] for item in requirements if item["credit"] > 0}
+        gap_uris = {item["uri"] for item in requirements if item["credit"] < 1}
+        satisfied = {item["uri"] for item in requirements if item["credit"] >= 1}
         total_weight = sum(float(item["weight"]) for item in requirements)
         dependencies: dict[str, set[str]] = {uri: set() for uri in gap_uris}
         cluster_neighbours: dict[str, set[str]] = {uri: set() for uri in profile_uris}
@@ -305,6 +319,7 @@ class NotebookPipeline:
                 gain = (
                     100.0 * sum(
                         float(requirements_by_uri[required_uri]["weight"])
+                        * (1.0 - float(requirements_by_uri[required_uri]["credit"]))
                         for required_uri in newly_satisfied
                     ) / total_weight
                     if total_weight
@@ -337,6 +352,7 @@ class NotebookPipeline:
                 return (
                     100.0 * sum(
                         float(requirements_by_uri[required_uri]["weight"])
+                        * (1.0 - float(requirements_by_uri[required_uri]["credit"]))
                         for required_uri in newly_satisfied
                     ) / total_weight
                     if total_weight
@@ -387,7 +403,7 @@ class NotebookPipeline:
     def _market_delta(requirements: list[dict]) -> dict:
         total_weight = sum(item["weight"] for item in requirements)
         gaps = sorted(
-            (item for item in requirements if item["credit"] == 0),
+            (item for item in requirements if item["credit"] < 1),
             key=lambda item: (
                 -item.get(
                     "marginal_gain_pp",
@@ -450,15 +466,23 @@ def _build_descendants(graph, engine) -> dict[str, set[str]]:
     return descendants
 
 
-def _learning_resource(skill: str, resources=LEARNING_RESOURCES) -> dict[str, str]:
+def _learning_resource(skill: str, resources=LEARNING_RESOURCES) -> dict[str, object]:
     normalized = skill.casefold()
-    for keywords, title, provider, url in resources:
+    for keywords, title, provider, url, trust_signals, trust_evidence_url in resources:
         if any(keyword in normalized for keyword in keywords):
-            return {"title": title, "provider": provider, "url": url}
+            return {
+                "title": title,
+                "provider": provider,
+                "url": url,
+                "trust_signals": list(trust_signals),
+                "trust_evidence_url": trust_evidence_url,
+            }
     return {
         "title": f"Find courses for {skill}",
         "provider": "Coursera course search",
         "url": f"https://www.coursera.org/search?query={quote_plus(skill)}",
+        "trust_signals": [],
+        "trust_evidence_url": None,
     }
 
 

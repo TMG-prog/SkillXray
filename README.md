@@ -23,7 +23,7 @@ SkillXray is a mobile-first career readiness application that helps job seekers 
 
 **3. Gap Reporting.** The app highlights skills that are missing, weak, or underrepresented, so the user sees exactly where to improve.
 
-**4. Learning Recommendations.** Identified gaps are turned into recommendations for relevant skills or learning resources, so the result is an actionable plan rather than a passive report.
+**4. Learning Recommendations.** Identified gaps are turned into recommendations for relevant skills or learning resources, so the result is an actionable plan rather than a passive report. The Recommended screen also lets users browse provider catalogs for free learning or paid courses, including Cisco Skills for All, Microsoft Learn, freeCodeCamp, Coursera, Udemy, and edX. Curated resources can display NITA-accredited, University-backed, Free/Open Access, or Industry Certification badges only after an administrator records an official HTTP(S) evidence source; the URL is a review aid, not automatic accreditation verification. Prices and certificate fees vary by provider and course.
 
 **5. Progress Tracking.** Users can track their learning and course engagement over time.
 
@@ -60,7 +60,7 @@ The app calls the FastAPI `/analyze` endpoint with the resume file, target role,
 Service modules handle uploading a resume, requesting analysis, polling for status, retrieving skill gaps, and storing readiness data in app state. They keep client-side logic separate from the UI.
 
 ### Model Layer
-The API adapts the notebook-derived v2 scorer to the mobile response contract. It extracts resume skills, compares them with the selected role profile, and returns readiness, per-skill evidence, and weighted gaps. Database-backed market trends compare dated postings across a 90-day recent window and the preceding 275-day baseline, with deduplication, minimum support, smoothing, classifications, and sample-posting evidence. The app persists each full report with its `skill_analyses` record and reloads the user's recent history from Supabase.
+The API adapts the notebook-derived v2 scorer to the mobile response contract. It extracts resume skills, compares them with the selected role profile, and returns readiness, per-skill evidence, and weighted gaps. Recognized resume headings preserve evidence provenance: evidence found only in Education receives half credit, while a skill also evidenced in Experience or Projects receives full credit. If no known headings are detected, the existing scoring is retained and a warning is returned. Database-backed market trends compare dated postings across a 90-day recent window and the preceding 275-day baseline, with deduplication, minimum support, smoothing, classifications, and sample-posting evidence. The app persists each full report with its `skill_analyses` record and reloads the user's recent history from Supabase.
 
 ---
 

@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { supabase } from "@/lib/supabase";
 import { getAnalysisHistory, saveAnalysisHistory } from "@/services/analysisHistoryService";
-import type { TrackedCourse, TrackedCourseStatus } from "@/types";
+import type { CourseTrustSignal, TrackedCourse, TrackedCourseStatus } from "@/types";
 
 // TODO: this whole file is a stand-in for real Supabase-backed state. Once
 // auth + data fetching are wired up, replace the useState calls with
@@ -12,6 +12,7 @@ export interface SkillGap {
   skill: string;
   severity: "high" | "medium" | "low";
   fill: number; // 0-1, how much of the skill is present
+  evidenceSection?: string | null;
 }
 
 export interface AnalysisRequirement {
@@ -24,6 +25,7 @@ export interface AnalysisRequirement {
   evidence?: string;
   cv_evidence?: string;
   cv_highlight?: string;
+  evidence_section?: string | null;
   gap_confidence?: number;
 }
 
@@ -98,7 +100,13 @@ export interface AnalysisLearningPlanStep {
   clusterSkills: string[];
   coveredBy: string | null;
   hiringEvidence: AnalysisHiringEvidence | null;
-  resource: { title: string; provider: string; url: string };
+  resource: {
+    title: string;
+    provider: string;
+    url: string;
+    trustSignals?: CourseTrustSignal[];
+    trustEvidenceUrl?: string | null;
+  };
 }
 
 export interface AnalysisSkillRelationship {

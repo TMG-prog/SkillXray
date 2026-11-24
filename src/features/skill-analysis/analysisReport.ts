@@ -1,5 +1,6 @@
 import type { Content, TDocumentDefinitions } from "pdfmake/interfaces";
 import type { Analysis, AnalysisRequirement } from "@/state/appdatacontext";
+import { COURSE_TRUST_SIGNAL_LABELS } from "@/types";
 
 const percentage = (value: number) => `${Math.round(value * 100)}%`;
 
@@ -14,6 +15,9 @@ function requirementDetails(requirement: AnalysisRequirement): Content[] {
     },
   ];
   if (requirement.reason) details.push({ text: `Match reason: ${requirement.reason}`, style: "detail" });
+  if (requirement.evidence_section) {
+    details.push({ text: `Evidence section: ${requirement.evidence_section}`, style: "detail" });
+  }
   if (requirement.evidence) details.push({ text: `Matching evidence: ${requirement.evidence}`, style: "detail" });
   if (requirement.cv_evidence) {
     details.push({ text: `CV excerpt: ${requirement.cv_evidence}`, style: "detail" });
@@ -81,6 +85,15 @@ export function buildAnalysisReport(analysis: Analysis, generatedAt: Date): TDoc
         { text: `${step.rank}. ${step.skill}`, style: "itemTitle" },
         { text: `${step.resource.title} — ${step.resource.provider}`, style: "detail" },
         { text: step.resource.url, style: "link" },
+        {
+          text: step.resource.trustSignals?.length
+            ? `Trust signals: ${step.resource.trustSignals.map((signal) => COURSE_TRUST_SIGNAL_LABELS[signal]).join(", ")}`
+            : "Trust/accreditation signals have not been verified for this resource.",
+          style: "muted",
+        },
+        ...(step.resource.trustEvidenceUrl
+          ? [{ text: `Trust evidence: ${step.resource.trustEvidenceUrl}`, style: "link" as const }]
+          : []),
         { text: `Estimated readiness gain: up to +${step.marginalGainPoints.toFixed(1)} points`, style: "muted" },
       );
       if (step.prerequisites.length) content.push({ text: `Learn after: ${step.prerequisites.join(", ")}`, style: "detail" });

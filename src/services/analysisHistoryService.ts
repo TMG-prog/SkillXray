@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import type { Analysis, AnalysisHistoryEntry } from "@/state/appdatacontext";
+import { COURSE_TRUST_SIGNALS, type CourseTrustSignal } from "@/types";
 
 interface AnalysisRow {
   id: string;
@@ -125,7 +126,23 @@ function isLearningPlanStep(value: unknown): boolean {
     && (value.hiringEvidence === null || isRecord(value.hiringEvidence))
     && typeof value.resource.title === "string"
     && typeof value.resource.provider === "string"
-    && typeof value.resource.url === "string";
+    && typeof value.resource.url === "string"
+    && (value.resource.trustSignals === undefined
+      || (Array.isArray(value.resource.trustSignals)
+        && value.resource.trustSignals.every(isCourseTrustSignal)))
+    && (value.resource.trustEvidenceUrl === undefined
+      || value.resource.trustEvidenceUrl === null
+      || isHttpUrl(value.resource.trustEvidenceUrl))
+    && (!(Array.isArray(value.resource.trustSignals) && value.resource.trustSignals.length > 0)
+      || isHttpUrl(value.resource.trustEvidenceUrl));
+}
+
+function isCourseTrustSignal(value: unknown): value is CourseTrustSignal {
+  return COURSE_TRUST_SIGNALS.some((signal) => signal === value);
+}
+
+function isHttpUrl(value: unknown): value is string {
+  return typeof value === "string" && /^https?:\/\/\S+$/i.test(value);
 }
 
 function unavailableAnalysis(row: AnalysisRow, fileUrl?: string, roleTitle?: string): Analysis {

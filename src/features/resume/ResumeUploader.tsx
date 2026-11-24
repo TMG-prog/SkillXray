@@ -91,6 +91,8 @@ export function ResumeUploader() {
           prerequisites: step.prerequisites,
           clusterSkills: step.cluster_skills,
           coveredBy: step.covered_by,
+          trustSignals: step.resource.trust_signals ?? [],
+          trustEvidenceUrl: step.resource.trust_evidence_url ?? null,
           hiringEvidence: step.hiring_evidence ? {
             sampleSize: step.hiring_evidence.sample_size,
             postingCount: step.hiring_evidence.posting_count,
@@ -156,6 +158,7 @@ export function ResumeUploader() {
           skill: gap.skill,
           severity: index < mostImportantGapCount ? "high" : index < mediumGapCount ? "medium" : "low",
           fill: gap.credit,
+          evidenceSection: gap.evidence_section,
         })),
       }, user.id, resumeId, targetRole);
       router.replace({

@@ -113,10 +113,18 @@ def test_role_and_resource_validation(client):
     assert fake.calls[-1][2]["json"]["title"] == "Engineer"
     assert client.put(f"/api/roles/{TARGET}", json={"title": "Engineer"}).status_code == 404
     resource = {"title": " Course ", "provider": " Provider ", "url": "https://example.com",
-                "keywords": [" Python ", "python"], "published": True}
+                "keywords": [" Python ", "python"], "published": True,
+                "trust_signals": ["free_open_access"],
+                "trust_evidence_url": "https://example.com/trust"}
     assert client.post("/api/resources", json={**resource, "url": "javascript:alert(1)"}).status_code == 422
     assert client.post("/api/resources", json=resource).status_code == 200
     assert fake.calls[-1][2]["json"]["keywords"] == ["python"]
+    assert fake.calls[-1][2]["json"]["trust_signals"] == ["free_open_access"]
+    assert client.post("/api/resources", json={**resource, "trust_evidence_url": None}).status_code == 422
+    assert client.post(
+        "/api/resources", json={**resource, "trust_evidence_url": "javascript:alert(1)"}
+    ).status_code == 422
+    assert client.post("/api/resources", json={**resource, "trust_signals": ["unverified"]}).status_code == 422
     assert client.put(f"/api/resources/{TARGET}", json=resource).status_code == 404
 
 
