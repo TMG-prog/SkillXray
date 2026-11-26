@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Alert, Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
@@ -25,65 +24,6 @@ export type Recommendation = {
   hiringEvidence?: string;
   trustSignals?: CourseTrustSignal[];
   trustEvidenceUrl?: string | null;
-};
-
-type PriceFilter = "free" | "paid";
-
-type CourseProvider = {
-  name: string;
-  description: string;
-  searchUrl: (skill: string) => string;
-  trustSignals: CourseTrustSignal[];
-  trustEvidenceUrl: string | null;
-};
-
-const COURSE_PROVIDERS: Record<PriceFilter, CourseProvider[]> = {
-  free: [
-    {
-      name: "Cisco Skills for All",
-      description: "Free, self-paced technology courses. Search the catalog for this skill.",
-      searchUrl: () => "https://skillsforall.com/",
-      trustSignals: ["free_open_access"],
-      trustEvidenceUrl: "https://skillsforall.com/",
-    },
-    {
-      name: "Microsoft Learn",
-      description: "Free technical learning paths and modules.",
-      searchUrl: (skill) => `https://learn.microsoft.com/training/browse/?terms=${encodeURIComponent(skill)}`,
-      trustSignals: ["free_open_access"],
-      trustEvidenceUrl: "https://learn.microsoft.com/training/",
-    },
-    {
-      name: "freeCodeCamp",
-      description: "Free coding and technology curriculum.",
-      searchUrl: () => "https://www.freecodecamp.org/learn/",
-      trustSignals: ["free_open_access"],
-      trustEvidenceUrl: "https://www.freecodecamp.org/learn/",
-    },
-  ],
-  paid: [
-    {
-      name: "Coursera",
-      description: "Browse courses and professional certificates.",
-      searchUrl: (skill) => `https://www.coursera.org/search?query=${encodeURIComponent(skill)}`,
-      trustSignals: [],
-      trustEvidenceUrl: null,
-    },
-    {
-      name: "Udemy",
-      description: "Browse instructor-led courses; prices and discounts vary.",
-      searchUrl: (skill) => `https://www.udemy.com/courses/search/?q=${encodeURIComponent(skill)}`,
-      trustSignals: [],
-      trustEvidenceUrl: null,
-    },
-    {
-      name: "edX",
-      description: "Browse courses and certificate programs.",
-      searchUrl: (skill) => `https://www.edx.org/search?q=${encodeURIComponent(skill)}`,
-      trustSignals: [],
-      trustEvidenceUrl: null,
-    },
-  ],
 };
 
 async function openCourse(url: string) {
@@ -133,17 +73,14 @@ type Props = {
 export function RecommendationList({ items, onPressItem, roadmap = false }: Props) {
   const router = useRouter();
   const { analysis } = useAppData();
-  const [priceFilter, setPriceFilter] = useState<PriceFilter>("free");
-  const browseProviderCatalogs = items === undefined && !roadmap;
-  const providerSkills = [...new Set((analysis?.gaps ?? []).map((gap) => gap.skill))];
 
   const resolvedItems =
     items ?? (analysis?.learningPlan?.length
       ? analysis.learningPlan.map((step) => ({
         id: step.uri,
-        title: step.resource.title,
-        provider: step.resource.provider,
-        url: step.resource.url,
+        title: step.resource?.title ?? "No exact course curated yet",
+        provider: step.resource?.provider ?? "",
+        url: step.resource?.url ?? "",
         skill: step.skill,
         rank: step.rank,
         marginalGainPoints: step.marginalGainPoints,
@@ -157,63 +94,10 @@ export function RecommendationList({ items, onPressItem, roadmap = false }: Prop
         clusterSkills: step.clusterSkills,
         coveredBy: step.coveredBy,
         hiringEvidence: step.hiringEvidence?.evidence,
-        trustSignals: step.resource.trustSignals,
-        trustEvidenceUrl: step.resource.trustEvidenceUrl,
+        trustSignals: step.resource?.trustSignals,
+        trustEvidenceUrl: step.resource?.trustEvidenceUrl,
       }))
       : []);
-
-  if (browseProviderCatalogs && providerSkills.length > 0) {
-    const providers = COURSE_PROVIDERS[priceFilter];
-    return (
-      <View style={styles.list}>
-        <View style={styles.priceToggle} accessibilityLabel="Filter course providers by price">
-          {(["free", "paid"] as const).map((filter) => (
-            <Pressable
-              key={filter}
-              onPress={() => setPriceFilter(filter)}
-              accessibilityRole="button"
-              accessibilityState={{ selected: priceFilter === filter }}
-              style={[styles.priceOption, priceFilter === filter && styles.priceOptionSelected]}
-            >
-              <Text style={[styles.priceOptionText, priceFilter === filter && styles.priceOptionTextSelected]}>
-                {filter === "free" ? "Free" : "Paid"}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-        <Text style={styles.priceNote}>
-          {priceFilter === "free"
-            ? "Explore free learning content. Certificates, exams, or premium content may cost extra."
-            : "Explore paid courses and certificates. Check each provider for current prices and free options."}
-        </Text>
-        {providerSkills.map((skill) => (
-          <View key={skill} style={styles.providerGroup}>
-            <Text style={styles.providerSkill}>{skill}</Text>
-            {providers.map((provider) => (
-              <View key={provider.name} style={styles.providerEntry}>
-                <Pressable
-                  onPress={() => openCourse(provider.searchUrl(skill))}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${provider.name} resources for ${skill}`}
-                  style={({ pressed }) => [styles.providerCard, pressed && { opacity: 0.85 }]}
-                >
-                  <View style={styles.providerCopy}>
-                    <Text style={styles.providerName}>{provider.name}</Text>
-                    <Text style={styles.providerDescription}>{provider.description}</Text>
-                  </View>
-                  <Feather name="arrow-up-right" size={18} color={brand.cyan} />
-                </Pressable>
-                <TrustSignalBadges
-                  signals={provider.trustSignals}
-                  evidenceUrl={provider.trustEvidenceUrl}
-                />
-              </View>
-            ))}
-          </View>
-        ))}
-      </View>
-    );
-  }
 
   if (resolvedItems.length === 0) {
     if (roadmap && analysis) {
@@ -273,9 +157,12 @@ export function RecommendationList({ items, onPressItem, roadmap = false }: Prop
       {resolvedItems.map((item, index) => (
         <View key={item.id} style={styles.card}>
           <Pressable
-            onPress={() => onPressItem ? onPressItem(item) : openCourse(item.url)}
-            accessibilityRole="button"
-            accessibilityLabel={`${item.title}. View learning resource.`}
+            onPress={() => item.url && (onPressItem ? onPressItem(item) : openCourse(item.url))}
+            disabled={!item.url}
+            accessibilityRole={item.url ? "link" : "none"}
+            accessibilityLabel={item.url
+              ? `${item.title}. Open exact course.`
+              : `${item.skill}. No exact course link is currently available.`}
             style={({ pressed }) => pressed && { opacity: 0.85 }}
           >
             {roadmap && index === 0 && <Text style={styles.startHere}>START HERE</Text>}
@@ -290,12 +177,15 @@ export function RecommendationList({ items, onPressItem, roadmap = false }: Prop
                   <Text style={styles.pillText}>{item.skill}</Text>
                 </View>
               </View>
-              <Feather name="arrow-up-right" size={18} color={brand.muted} />
+              {item.url && <Feather name="arrow-up-right" size={18} color={brand.muted} />}
             </View>
 
             {roadmap && <Text style={styles.roadmapSkill}>{item.skill}</Text>}
             <Text style={styles.title}>{item.title}</Text>
-            <Text style={styles.meta}>{item.provider}</Text>
+            {!!item.provider && <Text style={styles.meta}>{item.provider}</Text>}
+            {!item.url && (
+              <Text style={styles.evidence}>No exact course link is currently available for this skill.</Text>
+            )}
             {item.marginalGainPoints !== undefined && (
               <Text style={styles.evidence}>
                 {roadmap ? "Estimated readiness gain" : "Up to"} +{item.marginalGainPoints.toFixed(1)} {roadmap ? "points" : "CRI points when learned"}.
@@ -325,12 +215,16 @@ export function RecommendationList({ items, onPressItem, roadmap = false }: Prop
               <Text style={styles.evidence}>Hiring evidence: {item.hiringEvidence}</Text>
             )}
 
-            <View style={styles.courseLink}>
-              <Text style={styles.courseLinkText}>{roadmap ? "View learning resource" : "View course & enroll"}</Text>
-              <Feather name="external-link" size={15} color={brand.cyan} />
-            </View>
+            {item.url && (
+              <View style={styles.courseLink}>
+                <Text style={styles.courseLinkText}>{roadmap ? "View exact course" : "View course & enroll"}</Text>
+                <Feather name="external-link" size={15} color={brand.cyan} />
+              </View>
+            )}
           </Pressable>
-          <TrustSignalBadges signals={item.trustSignals} evidenceUrl={item.trustEvidenceUrl} />
+          {item.url && (
+            <TrustSignalBadges signals={item.trustSignals} evidenceUrl={item.trustEvidenceUrl} />
+          )}
         </View>
       ))}
     </View>
@@ -339,38 +233,6 @@ export function RecommendationList({ items, onPressItem, roadmap = false }: Prop
 
 const styles = StyleSheet.create({
   list: { gap: 12 },
-  priceToggle: {
-    flexDirection: "row",
-    alignSelf: "flex-start",
-    padding: 4,
-    gap: 4,
-    borderRadius: 999,
-    backgroundColor: brand.surface,
-    borderWidth: 1,
-    borderColor: brand.border,
-  },
-  priceOption: { borderRadius: 999, paddingVertical: 9, paddingHorizontal: 20 },
-  priceOptionSelected: { backgroundColor: brand.tint },
-  priceOptionText: { color: brand.muted, fontSize: 14, fontWeight: "700" },
-  priceOptionTextSelected: { color: brand.cyan },
-  priceNote: { color: brand.muted, fontSize: 13, lineHeight: 19, marginBottom: 8 },
-  providerGroup: { gap: 8, marginBottom: 12 },
-  providerEntry: { gap: 4 },
-  providerSkill: { color: brand.text, fontSize: 17, fontWeight: "700", marginBottom: 2 },
-  providerCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-    backgroundColor: brand.surface,
-    borderWidth: 1,
-    borderColor: brand.border,
-    borderRadius: 14,
-    padding: 16,
-  },
-  providerCopy: { flex: 1, gap: 4 },
-  providerName: { color: brand.text, fontSize: 15, fontWeight: "700" },
-  providerDescription: { color: brand.muted, fontSize: 12, lineHeight: 17 },
   trustSignals: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 8 },
   trustBadge: {
     backgroundColor: "rgba(37,217,208,0.12)",

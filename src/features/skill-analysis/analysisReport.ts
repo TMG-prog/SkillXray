@@ -81,21 +81,25 @@ export function buildAnalysisReport(analysis: Analysis, generatedAt: Date): TDoc
   content.push({ text: "Learning recommendations", style: "heading" });
   if (analysis.learningPlan?.length) {
     for (const step of analysis.learningPlan) {
-      content.push(
-        { text: `${step.rank}. ${step.skill}`, style: "itemTitle" },
-        { text: `${step.resource.title} — ${step.resource.provider}`, style: "detail" },
-        { text: step.resource.url, style: "link" },
-        {
-          text: step.resource.trustSignals?.length
-            ? `Trust signals: ${step.resource.trustSignals.map((signal) => COURSE_TRUST_SIGNAL_LABELS[signal]).join(", ")}`
-            : "Trust/accreditation signals have not been verified for this resource.",
-          style: "muted",
-        },
-        ...(step.resource.trustEvidenceUrl
-          ? [{ text: `Trust evidence: ${step.resource.trustEvidenceUrl}`, style: "link" as const }]
-          : []),
-        { text: `Estimated readiness gain: up to +${step.marginalGainPoints.toFixed(1)} points`, style: "muted" },
-      );
+      content.push({ text: `${step.rank}. ${step.skill}`, style: "itemTitle" });
+      if (step.resource) {
+        content.push(
+          { text: `${step.resource.title} — ${step.resource.provider}`, style: "detail" },
+          { text: step.resource.url, style: "link" },
+          {
+            text: step.resource.trustSignals?.length
+              ? `Trust signals: ${step.resource.trustSignals.map((signal) => COURSE_TRUST_SIGNAL_LABELS[signal]).join(", ")}`
+              : "Trust/accreditation signals have not been verified for this resource.",
+            style: "muted",
+          },
+          ...(step.resource.trustEvidenceUrl
+            ? [{ text: `Trust evidence: ${step.resource.trustEvidenceUrl}`, style: "link" as const }]
+            : []),
+        );
+      } else {
+        content.push({ text: "No exact course link is currently curated for this skill.", style: "muted" });
+      }
+      content.push({ text: `Estimated readiness gain: up to +${step.marginalGainPoints.toFixed(1)} points`, style: "muted" });
       if (step.prerequisites.length) content.push({ text: `Learn after: ${step.prerequisites.join(", ")}`, style: "detail" });
       if (step.clusterSkills.length) content.push({ text: `Related skills: ${step.clusterSkills.join(", ")}`, style: "detail" });
       if (step.coveredBy) content.push({ text: `Also addressed by: ${step.coveredBy}`, style: "detail" });
@@ -104,8 +108,8 @@ export function buildAnalysisReport(analysis: Analysis, generatedAt: Date): TDoc
   } else if (analysis.gaps.length) {
     for (const gap of analysis.gaps) {
       content.push(
-        { text: `Find courses for ${gap.skill}`, style: "itemTitle" },
-        { text: `https://www.coursera.org/search?query=${encodeURIComponent(gap.skill)}`, style: "link" },
+        { text: gap.skill, style: "itemTitle" },
+        { text: "No exact course link is currently curated for this skill.", style: "muted" },
       );
     }
   } else {

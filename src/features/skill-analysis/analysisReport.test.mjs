@@ -65,3 +65,12 @@ test("demo and older analyses disclose unavailable details", () => {
   assert.ok(text.includes("No detailed gaps available."));
   assert.ok(text.includes("No recommendations available."));
 });
+
+test("analysis report does not invent a course link when none is curated", () => {
+  const saved = analysis();
+  saved.learningPlan[0].resource = null;
+  const text = JSON.stringify(buildAnalysisReport(saved, new Date("2026-11-16T00:00:00Z")).content);
+
+  assert.ok(text.includes("No exact course link is currently curated for this skill."));
+  assert.ok(!text.includes("https://example.com/python"));
+});

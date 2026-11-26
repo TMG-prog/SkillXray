@@ -112,7 +112,8 @@ function isAnalysis(value: unknown): value is Analysis {
 }
 
 function isLearningPlanStep(value: unknown): boolean {
-  if (!isRecord(value) || !isRecord(value.resource)) return false;
+  if (!isRecord(value)) return false;
+  const resource = value.resource;
   return typeof value.rank === "number"
     && typeof value.skill === "string"
     && typeof value.uri === "string"
@@ -124,17 +125,19 @@ function isLearningPlanStep(value: unknown): boolean {
     && value.clusterSkills.every((skill) => typeof skill === "string")
     && (value.coveredBy === null || typeof value.coveredBy === "string")
     && (value.hiringEvidence === null || isRecord(value.hiringEvidence))
-    && typeof value.resource.title === "string"
-    && typeof value.resource.provider === "string"
-    && typeof value.resource.url === "string"
-    && (value.resource.trustSignals === undefined
-      || (Array.isArray(value.resource.trustSignals)
-        && value.resource.trustSignals.every(isCourseTrustSignal)))
-    && (value.resource.trustEvidenceUrl === undefined
-      || value.resource.trustEvidenceUrl === null
-      || isHttpUrl(value.resource.trustEvidenceUrl))
-    && (!(Array.isArray(value.resource.trustSignals) && value.resource.trustSignals.length > 0)
-      || isHttpUrl(value.resource.trustEvidenceUrl));
+    && (resource === null
+      || (isRecord(resource)
+        && typeof resource.title === "string"
+        && typeof resource.provider === "string"
+        && typeof resource.url === "string"
+        && (resource.trustSignals === undefined
+          || (Array.isArray(resource.trustSignals)
+            && resource.trustSignals.every(isCourseTrustSignal)))
+        && (resource.trustEvidenceUrl === undefined
+          || resource.trustEvidenceUrl === null
+          || isHttpUrl(resource.trustEvidenceUrl))
+        && (!(Array.isArray(resource.trustSignals) && resource.trustSignals.length > 0)
+          || isHttpUrl(resource.trustEvidenceUrl))));
 }
 
 function isCourseTrustSignal(value: unknown): value is CourseTrustSignal {

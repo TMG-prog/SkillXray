@@ -107,7 +107,7 @@ export interface PipelineLearningPlanStep {
     url: string;
     trust_signals?: CourseTrustSignal[];
     trust_evidence_url?: string | null;
-  };
+  } | null;
 }
 
 export interface PipelineHiringEvidence {
@@ -296,7 +296,7 @@ function createMockAnalysis(role: string): PipelineAnalysis {
         resource: {
           title: "AWS Cloud Practitioner Essentials",
           provider: "AWS Skill Builder",
-          url: "https://skillbuilder.aws/learn",
+          url: "https://skillbuilder.aws/learn/94T2BEN85A/aws-cloud-practitioner-essentials/8D79F3AVR7",
           trust_signals: [],
           trust_evidence_url: null,
         },
@@ -451,18 +451,19 @@ function isPipelineAnalysis(value: unknown): value is PipelineAnalysis {
     && item.cluster_skills.every((skill) => typeof skill === "string")
     && (item.covered_by === null || typeof item.covered_by === "string")
     && (item.hiring_evidence === null || isHiringEvidence(item.hiring_evidence))
-    && isRecord(item.resource)
-    && typeof item.resource.title === "string"
-    && typeof item.resource.provider === "string"
-    && typeof item.resource.url === "string"
-    && (item.resource.trust_signals === undefined
-      || (Array.isArray(item.resource.trust_signals)
-        && item.resource.trust_signals.every(isCourseTrustSignal)))
-    && (item.resource.trust_evidence_url === undefined
-      || item.resource.trust_evidence_url === null
-      || isHttpUrl(item.resource.trust_evidence_url))
-    && (!(Array.isArray(item.resource.trust_signals) && item.resource.trust_signals.length > 0)
-      || isHttpUrl(item.resource.trust_evidence_url));
+    && (item.resource === null
+      || (isRecord(item.resource)
+        && typeof item.resource.title === "string"
+        && typeof item.resource.provider === "string"
+        && typeof item.resource.url === "string"
+        && (item.resource.trust_signals === undefined
+          || (Array.isArray(item.resource.trust_signals)
+            && item.resource.trust_signals.every(isCourseTrustSignal)))
+        && (item.resource.trust_evidence_url === undefined
+          || item.resource.trust_evidence_url === null
+          || isHttpUrl(item.resource.trust_evidence_url))
+        && (!(Array.isArray(item.resource.trust_signals) && item.resource.trust_signals.length > 0)
+          || isHttpUrl(item.resource.trust_evidence_url))));
   const isRelationship = (item: unknown) =>
     isRecord(item)
     && typeof item.source === "string"

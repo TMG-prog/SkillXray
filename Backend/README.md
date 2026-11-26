@@ -65,8 +65,9 @@ index from another encoder is not compatible.
    remaining marginal gain to the same weighted CRI; the estimate
    accounts for ESCO descendants that can satisfy broader requirements and avoids counting those requirements twice.
    The plan also groups related ESCO skills, orders curated prerequisites first (broader and related links do not
-   establish learning prerequisites), and links each step to a course,
-   certification, or targeted course search. When extracted resume skills overlap role postings, co-occurrence evidence
+   establish learning prerequisites), and links each step to a curated course or certification detail page when one is
+   available. Skills without an exact curated resource remain in the plan without a provider-homepage or search link.
+   When extracted resume skills overlap role postings, co-occurrence evidence
    compares gap frequency in those postings with the role-wide rate; this is posting evidence, not candidate outcome
    data. Database-backed analysis also returns `market_intelligence`, computed from URI-linked skills in the last
    120 days of stored postings. It reports market classifications, missing core/common/emerging skills, owned

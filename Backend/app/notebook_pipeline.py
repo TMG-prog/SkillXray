@@ -5,7 +5,6 @@ import importlib
 import os
 import sys
 from pathlib import Path
-from urllib.parse import quote_plus
 
 import pandas as pd
 
@@ -33,13 +32,13 @@ LEARNING_RESOURCES = (
      "https://developer.hashicorp.com/terraform/tutorials/certification-003", ("industry_certification",),
      "https://developer.hashicorp.com/terraform/tutorials/certification-003"),
     (("aws", "amazon web services"), "AWS Cloud Practitioner Essentials", "AWS Skill Builder",
-     "https://skillbuilder.aws/learn", (), None),
+     "https://skillbuilder.aws/learn/94T2BEN85A/aws-cloud-practitioner-essentials/8D79F3AVR7", (), None),
     (("azure",), "Azure Fundamentals learning path", "Microsoft Learn",
      "https://learn.microsoft.com/training/paths/azure-fundamentals-describe-cloud-concepts/",
      ("free_open_access",),
      "https://learn.microsoft.com/training/paths/azure-fundamentals-describe-cloud-concepts/"),
-    (("google cloud", "gcp"), "Google Cloud learning paths", "Google Cloud Skills Boost",
-     "https://www.cloudskillsboost.google/paths", (), None),
+    (("google cloud", "gcp"), "Google Cloud Fundamentals: Core Infrastructure", "Google Skills",
+     "https://www.skills.google/course_templates/60", (), None),
     (("project management",), "Google Project Management Professional Certificate", "Coursera · Google",
      "https://www.coursera.org/professional-certificates/google-project-management", (), None),
     (("data analytics", "data analysis"), "Google Data Analytics Professional Certificate", "Coursera · Google",
@@ -466,7 +465,7 @@ def _build_descendants(graph, engine) -> dict[str, set[str]]:
     return descendants
 
 
-def _learning_resource(skill: str, resources=LEARNING_RESOURCES) -> dict[str, object]:
+def _learning_resource(skill: str, resources=LEARNING_RESOURCES) -> dict[str, object] | None:
     normalized = skill.casefold()
     for keywords, title, provider, url, trust_signals, trust_evidence_url in resources:
         if any(keyword in normalized for keyword in keywords):
@@ -477,13 +476,7 @@ def _learning_resource(skill: str, resources=LEARNING_RESOURCES) -> dict[str, ob
                 "trust_signals": list(trust_signals),
                 "trust_evidence_url": trust_evidence_url,
             }
-    return {
-        "title": f"Find courses for {skill}",
-        "provider": "Coursera course search",
-        "url": f"https://www.coursera.org/search?query={quote_plus(skill)}",
-        "trust_signals": [],
-        "trust_evidence_url": None,
-    }
+    return None
 
 
 def _optional_number(value) -> float | None:

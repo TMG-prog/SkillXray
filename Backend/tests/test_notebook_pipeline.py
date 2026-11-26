@@ -3,7 +3,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.market_intelligence import CORE_MARKET_SKILL, SkillMarketMetrics
-from app.notebook_pipeline import NotebookPipeline, RoleNotFound
+from app.notebook_pipeline import NotebookPipeline, RoleNotFound, _learning_resource
 from app import auth, main
 
 
@@ -79,7 +79,9 @@ def test_analyze_adapts_notebook_result_to_mobile_contract():
     )
     assert result["learning_plan"][0]["prerequisites"] == ["Programming"]
     assert "Programming" in result["learning_plan"][0]["cluster_skills"]
-    assert all(step["resource"]["url"] for step in result["learning_plan"])
+    assert result["learning_plan"][1]["resource"]["url"] == (
+        "https://training.linuxfoundation.org/certification/certified-kubernetes-application-developer-ckad/"
+    )
     assert result["market_delta"]["high_roi_gaps"] == [
         {
             "skill": "Python",
@@ -149,6 +151,17 @@ def test_analysis_uses_configured_learning_catalog(monkeypatch):
         "trust_signals": ["university_backed"],
         "trust_evidence_url": "https://example.com/evidence",
     }
+
+
+def test_learning_recommendations_only_return_curated_course_links():
+    aws = _learning_resource("AWS cloud practitioner")
+    google_cloud = _learning_resource("Google Cloud")
+
+    assert aws["url"] == (
+        "https://skillbuilder.aws/learn/94T2BEN85A/aws-cloud-practitioner-essentials/8D79F3AVR7"
+    )
+    assert google_cloud["url"] == "https://www.skills.google/course_templates/60"
+    assert _learning_resource("specialized uncurated skill") is None
 
 
 def test_career_paths_use_available_role_profiles():

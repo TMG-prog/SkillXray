@@ -106,7 +106,7 @@ export interface AnalysisLearningPlanStep {
     url: string;
     trustSignals?: CourseTrustSignal[];
     trustEvidenceUrl?: string | null;
-  };
+  } | null;
 }
 
 export interface AnalysisSkillRelationship {

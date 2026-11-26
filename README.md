@@ -23,7 +23,7 @@ SkillXray is a mobile-first career readiness application that helps job seekers 
 
 **3. Gap Reporting.** The app highlights skills that are missing, weak, or underrepresented, so the user sees exactly where to improve.
 
-**4. Learning Recommendations.** Identified gaps are turned into recommendations for relevant skills or learning resources, so the result is an actionable plan rather than a passive report. The Recommended screen also lets users browse provider catalogs for free learning or paid courses, including Cisco Skills for All, Microsoft Learn, freeCodeCamp, Coursera, Udemy, and edX. Curated resources can display NITA-accredited, University-backed, Free/Open Access, or Industry Certification badges only after an administrator records an official HTTP(S) evidence source; the URL is a review aid, not automatic accreditation verification. Prices and certificate fees vary by provider and course.
+**4. Learning Recommendations.** Identified gaps are turned into an actionable learning plan. Recommendation links open curated course-detail pages directly; when no exact course is curated for a skill, the app shows that no course link is available instead of sending users to a provider homepage or search page. Curated resources can display NITA-accredited, University-backed, Free/Open Access, or Industry Certification badges only after an administrator records an official HTTP(S) evidence source; the URL is a review aid, not automatic accreditation verification. Prices and certificate fees vary by provider and course.
 
 **5. Progress Tracking.** Users can track their learning and course engagement over time.
 

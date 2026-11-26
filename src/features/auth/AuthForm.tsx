@@ -21,12 +21,18 @@ export default function AuthForm() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   // Email / Password Auth
   const handleAuth = async () => {
-    if (!email || !password) {
+    if (!email || !password || (!isLogin && !confirmPassword)) {
       Alert.alert('Error', 'Please fill in all fields.');
+      return;
+    }
+
+    if (!isLogin && password !== confirmPassword) {
+      Alert.alert('Error', "The passwords don't match.");
       return;
     }
 
@@ -104,8 +110,25 @@ export default function AuthForm() {
           placeholderTextColor={theme.subText}
           value={password}
           onChangeText={setPassword}
+          autoCapitalize="none"
+          textContentType={isLogin ? 'password' : 'newPassword'}
+          autoComplete={isLogin ? 'current-password' : 'new-password'}
           secureTextEntry
         />
+        {!isLogin && (
+          <TextInput
+            style={styles.input}
+            placeholder="Confirm Password"
+            placeholderTextColor={theme.subText}
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            autoCapitalize="none"
+            textContentType="newPassword"
+            autoComplete="new-password"
+            secureTextEntry
+            accessibilityLabel="Confirm password"
+          />
+        )}
         {isLogin && (
           <TouchableOpacity
             onPress={() => router.push('/forgot-password')}
@@ -141,7 +164,13 @@ export default function AuthForm() {
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity onPress={() => setIsLogin(!isLogin)} style={styles.switchContainer}>
+      <TouchableOpacity
+        onPress={() => {
+          setIsLogin((current) => !current);
+          setConfirmPassword('');
+        }}
+        style={styles.switchContainer}
+      >
         <Text style={styles.switchText}>
           {isLogin ? "Don't have an account? " : "Already have an account? "}
           <Text style={styles.switchTextBold}>{isLogin ? 'Sign Up' : 'Sign In'}</Text>
