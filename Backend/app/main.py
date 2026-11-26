@@ -1,4 +1,4 @@
-"""SkillXray API.  Endpoints: GET /health, GET /roles, GET /career-paths, POST /analyze."""
+"""SkillXray API endpoints."""
 from __future__ import annotations
 
 import logging
@@ -69,7 +69,7 @@ def index():
 
 @app.get("/health")
 def health():
-    return {"status": "ok" if STATE["pipeline"] else ("error" if STATE["error"] else "loading"),
+    return {"status": "error" if STATE["error"] else ("ok" if STATE["pipeline"] else "loading"),
             "error": STATE["error"]}
 
 
@@ -81,6 +81,21 @@ def roles(_: str = Depends(user)):
 @app.get("/career-paths")
 def career_paths(_: str = Depends(user)):
     return _pipeline().career_paths()
+
+
+@app.get("/market/ict")
+def ict_market(uid: str = Depends(user)):
+    pipeline = _pipeline()
+    provider = getattr(pipeline.engine, "_PROFILE_PROVIDER", None)
+    if provider is None:
+        raise HTTPException(503, "Database-backed market analysis is not configured.")
+    auth.check_rate(uid)
+    try:
+        with INFER_LOCK:
+            return provider.ict_market_analysis(C.ARTIFACTS / "data" / "esco")
+    except (OSError, ValueError):
+        log.exception("ICT market analysis failed")
+        raise HTTPException(503, "ICT market analysis failed. Check ESCO files and server logs.")
 
 
 @app.post("/analyze")

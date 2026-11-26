@@ -95,14 +95,14 @@
   "match_order": 13
  },
  {
-  "model_role": "software",
+  "model_role": "software developer",
   "search_query": "software developer",
   "title_pattern": "software|\\bdevelopers?\\b|programmer|full[- ]?stack|front[- ]?end|back[- ]?end",
   "extra_queries": [],
   "match_order": 14
  },
  {
-  "model_role": "bookkeeper",
+  "model_role": "Financial Coordinator",
   "search_query": "bookkeeper",
   "title_pattern": "bookkeep|accounts? (payable|receivable)|payroll|accounting (clerk|assistant)",
   "extra_queries": [],
@@ -172,7 +172,7 @@
   "match_order": 24
  },
  {
-  "model_role": "sales",
+  "model_role": "sales agent",
   "search_query": "sales representative",
   "title_pattern": "\\bsales\\b",
   "extra_queries": [],
@@ -200,14 +200,14 @@
   "match_order": 28
  },
  {
-  "model_role": "legal",
+  "model_role": "lawyer",
   "search_query": "legal officer",
   "title_pattern": "paralegal|legal (counsel|assistant|officer|advisor|secretary)|lawyer|attorney",
   "extra_queries": [],
   "match_order": 29
  },
  {
-  "model_role": "communications",
+  "model_role": "communications specialist",
   "search_query": "communications officer",
   "title_pattern": "public relations|communications? (manager|officer|specialist|coordinator)|copywriter|content writer|journalist|\\beditor\\b",
   "extra_queries": [],

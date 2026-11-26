@@ -44,7 +44,7 @@ def display(x):          # the notebook helper, so any leftover display() call i
 # 1. Extraction settings (notebook cells 6 and 28)
 # ==============================================================================
 JOBBERT_REPOS = {'skill': 'jjzha/jobbert_skill_extraction', 'knowledge': 'jjzha/jobbert_knowledge_extraction'}
-QUANTIZE       = os.getenv("QUANTIZE", "1") != "0"  # int8 dynamic quantisation, CPU only.
+QUANTIZE       = os.getenv("QUANTIZE", "0" if os.name == "nt" else "1") != "0"  # Set QUANTIZE=1 to opt into CPU int8.
 MAX_UNIT_WORDS = 70      # long run-on text (resumes) is cut into chunks of at most this many words
 MAX_TOKENS     = 160     # model input limit per chunk
 MAX_SKILL_WORDS = 8      # spans longer than this are duties, not skills

@@ -58,9 +58,9 @@ index from another encoder is not compatible.
    anon key in the backend environment as `SUPABASE_ANON_KEY`; the app sends the signed-in user's access token.
    The live target-role picker reads the authenticated `/roles` endpoint, so it only offers roles this scorer can analyze.
    Demo mode continues to use the Supabase role catalog.
-   Resume coverage starts from the notebook's `covered` result, then applies section-aware credit: Education-only
-   evidence earns half credit and stays in the gap list, while evidence also found in Experience or Projects earns full
-   credit. If no recognized headings are found, the existing scoring is retained and the response includes a warning.
+   Resume coverage retains the notebook's full credit for detected skills regardless of resume section; recognized
+   headings are included as evidence provenance only. If no recognized headings are found, the response includes a
+   warning and section provenance is omitted.
    Per-skill evidence sections, reasons, and gap confidence are returned. Learning-plan gaps are ranked by their
    remaining marginal gain to the same weighted CRI; the estimate
    accounts for ESCO descendants that can satisfy broader requirements and avoids counting those requirements twice.
@@ -79,9 +79,24 @@ index from another encoder is not compatible.
    deduplicates matching reposts per role and country, keeping the newest copy. Ambiguous or unlinked extracted terms
    are also grouped through known aliases (including GenAI/LLM-application variants) and reported separately from
    ESCO-linked skills. Labels are never used as ESCO identifiers.
+   The separate authenticated `GET /market/ict` endpoint provides an opt-in ICT market analysis without
+   changing readiness scores or existing market reports. It uses stored, deduplicated postings from the last
+   120 days, optionally scoped by `JSEARCH_COUNTRY`. Posting titles must match exactly (ignoring case and
+   whitespace) one ESCO preferred or alternative occupation label; ambiguous and unmatched titles are excluded
+   and counted, with up to 20 of each reported, so the results do not represent all ICT jobs. Matched occupations must have an `iscoGroup`
+   starting with 25 or 35. Linked skills are included if they are essential to any such occupation **or**
+   descend from the S5 computer-skills or K/06 ICT-knowledge hierarchy. Essential is an ESCO profile
+   designation; reported posting counts and frequencies are observed in the selected postings. Aliases in
+   `skills_en.csv` are already used by the extractor/linker, and matches are deduplicated by skill URI per
+   posting. Unlinked terms are excluded. Results require the database profile provider and matching-release
+   `occupations_en.csv`, `occupationSkillRelations_en.csv`, `skills_en.csv`, `skillsHierarchy_en.csv`, and
+   `broaderRelationsSkillPillar_en.csv` under `data/esco`. Missing or invalid inputs are reported as errors.
+   Use the endpoint through `/docs` or an authenticated API client; it is not shown in the mobile app.
    Optional explicit learning prerequisites can be added in `results/skill_prerequisites.json` as a JSON object
    mapping each skill's ESCO URI to an array of prerequisite skill URIs. ESCO broader/narrower and related-skill
    links are displayed as taxonomy relationships, not verified learning prerequisites.
+   CPU int8 dynamic quantization is enabled by default except on Windows, where it is opt-in via `QUANTIZE=1`;
+   use it only if the installed PyTorch backend supports its quantized kernels.
 The remaining Hugging Face Gradio deployment steps below describe a separate demo deployment, not the FastAPI endpoint
 called by the Expo app. This checkout does not contain the Gradio `app.py` entry point; follow those steps only in the
 Space repository that contains that app.

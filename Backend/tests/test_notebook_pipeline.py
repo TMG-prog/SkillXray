@@ -103,7 +103,7 @@ def test_analyze_adapts_notebook_result_to_mobile_contract():
     assert result["market_emergence"] is None
 
 
-def test_education_only_evidence_remains_a_gap_with_partial_readiness_credit():
+def test_education_only_evidence_gets_full_readiness_credit():
     class EducationEvidenceEngine(FakeNotebookEngine):
         @staticmethod
         def score_cv(text, role):
@@ -111,9 +111,9 @@ def test_education_only_evidence_remains_a_gap_with_partial_readiness_credit():
             result["table"]["credit"] = result["table"]["covered"].astype(float)
             result["table"]["evidence_section"] = None
             result["table"].loc[1, "covered"] = True
-            result["table"].loc[1, "credit"] = 0.5
+            result["table"].loc[1, "credit"] = 1.0
             result["table"].loc[1, "evidence_section"] = "education"
-            result["readiness"] = 0.65
+            result["readiness"] = 0.8
             result["resume_sections"] = ["education"]
             return result
 
@@ -121,16 +121,15 @@ def test_education_only_evidence_remains_a_gap_with_partial_readiness_credit():
         "Studied Python", "software"
     )
 
-    assert result["readiness"] == 65.0
-    assert result["n_covered"] == 1
-    assert [gap["skill"] for gap in result["gaps"]] == ["Python", "Kubernetes"]
-    assert result["gaps"][0]["credit"] == 0.5
-    assert result["gaps"][0]["evidence_section"] == "education"
-    assert not any("section headings were not detected" in warning for warning in result["warnings"])
-    plan_gain = {step["skill"]: step["marginal_gain_pp"] for step in result["learning_plan"]}
+    assert result["readiness"] == 80.0
+    assert result["n_covered"] == 2
+    assert [gap["skill"] for gap in result["gaps"]] == ["Kubernetes"]
+    assert result["covered"][1]["evidence_section"] == "education"
+    assert result["covered"][1]["credit"] == 1.0
+    assert not any("section provenance could not be attached" in warning for warning in result["warnings"])
     roi_gain = {gap["skill"]: gap["readiness_gain_pp"] for gap in result["market_delta"]["high_roi_gaps"]}
-    assert plan_gain["Python"] == 15.0
-    assert roi_gain["Python"] == 15.0
+    assert result["covered"][1]["marginal_gain_pp"] == 0.0
+    assert "Python" not in roi_gain
 
 
 def test_analyze_unknown_role_raises_role_not_found():

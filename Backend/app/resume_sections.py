@@ -150,12 +150,8 @@ def apply_section_credit(
     candidates: pd.DataFrame,
     spans: pd.DataFrame | None,
     sections: list[tuple[str, str]],
-    *,
-    education_credit: float = 0.5,
 ) -> pd.DataFrame:
-    """Apply partial readiness credit when the only supporting evidence is in Education."""
-    if not 0 <= education_credit <= 1:
-        raise ValueError("education_credit must be between 0 and 1.")
+    """Attach resume-section provenance without changing readiness credit."""
 
     result = table.copy()
     credits: list[float] = []
@@ -193,7 +189,7 @@ def apply_section_credit(
             key=lambda section: _SECTION_PRIORITY.get(section, 0),
             default=None,
         )
-        credits.append(education_credit if strongest_section == "education" else 1.0)
+        credits.append(1.0)
         evidence_sections.append(strongest_section)
 
     result["credit"] = credits

@@ -146,7 +146,7 @@ class NotebookPipeline:
             warnings.append(f"Using the static role profile: {profile_info['reason']}.")
         if not result.get("resume_sections"):
             warnings.append(
-                "Resume section headings were not detected, so section-based evidence weighting was not applied."
+                "Resume section headings were not detected, so section provenance could not be attached."
             )
         if len(result.get("extracted_skills", [])) < 5:
             warnings.append(

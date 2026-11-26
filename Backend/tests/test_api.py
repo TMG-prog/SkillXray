@@ -35,6 +35,40 @@ def test_health_and_roles(client):
     assert client.get("/roles").json()["posting_roles"] == ["software"]
 
 
+def test_health_reports_pipeline_startup_error(client):
+    from app import main
+
+    main.STATE["error"] = "RuntimeError: model startup failed"
+
+    assert client.get("/health").json() == {
+        "status": "error",
+        "error": "RuntimeError: model startup failed",
+    }
+
+
+def test_ict_market_endpoint(client, monkeypatch):
+    from types import SimpleNamespace
+    from app import main
+
+    engine = SimpleNamespace(_PROFILE_PROVIDER=None)
+    monkeypatch.setattr(main.STATE["pipeline"], "engine", engine, raising=False)
+    assert client.get("/market/ict").status_code == 503
+
+    class Provider:
+        def ict_market_analysis(self, directory):
+            return {"posting_counts": {"ict": 3}}
+
+    engine._PROFILE_PROVIDER = Provider()
+    assert client.get("/market/ict").json() == {"posting_counts": {"ict": 3}}
+
+    class BrokenProvider:
+        def ict_market_analysis(self, directory):
+            raise FileNotFoundError("missing ESCO data")
+
+    engine._PROFILE_PROVIDER = BrokenProvider()
+    assert client.get("/market/ict").status_code == 503
+
+
 def test_analyze_docx(client):
     r = client.post("/analyze", data={"role": "software"},
                     files={"file": ("cv.docx", _docx_bytes(RESUME), "application/octet-stream")})

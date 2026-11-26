@@ -11,7 +11,7 @@ ARTIFACTS = Path(os.getenv("ARTIFACTS_DIR", Path(__file__).resolve().parent.pare
 
 # ---- notebook section 2 / 3
 JOBBERT_REPOS = {"skill": "jjzha/jobbert_skill_extraction", "knowledge": "jjzha/jobbert_knowledge_extraction"}
-QUANTIZE = os.getenv("QUANTIZE", "1") == "1"
+QUANTIZE = os.getenv("QUANTIZE", "0" if os.name == "nt" else "1") == "1"
 MAX_UNIT_WORDS = 70
 MAX_TOKENS = 160
 MAX_SKILL_WORDS = 8

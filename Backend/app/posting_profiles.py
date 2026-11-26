@@ -130,6 +130,12 @@ class DatabaseProfileProvider:
         role_uris = self._market_role_uris.get(role.strip().lower(), set())
         return {uri: metrics[uri] for uri in sorted(role_uris) if uri in metrics}
 
+    def ict_market_analysis(self, esco_directory):
+        from .ict_analysis import IctFilter, analyze_ict_postings
+
+        postings = [posting for role_postings in self.market_postings.values() for posting in role_postings]
+        return analyze_ict_postings(self.engine, postings, IctFilter(esco_directory), self.now, self.country)
+
     def market_emergence_for_role(self, role: str) -> MarketEmergence:
         """Return recent posting-frequency trends scoped to a single role."""
         self._market_metrics()

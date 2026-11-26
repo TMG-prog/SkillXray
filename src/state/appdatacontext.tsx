@@ -1,12 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { supabase } from "@/lib/supabase";
 import { getAnalysisHistory, saveAnalysisHistory } from "@/services/analysisHistoryService";
+import {
+  addTrackedCourse, deleteTrackedCourse, listTrackedCourses, updateTrackedCourseStatus,
+} from "@/services/coursetracker";
 import type { CourseTrustSignal, TrackedCourse, TrackedCourseStatus } from "@/types";
-
-// TODO: this whole file is a stand-in for real Supabase-backed state. Once
-// auth + data fetching are wired up, replace the useState calls with
-// React Query (or similar) reads from SkillAnalyses / SkillGaps / TrackedCourses,
-// and the action functions with the corresponding inserts/updates.
 
 export interface SkillGap {
   skill: string;
@@ -153,8 +151,12 @@ interface AppDataContextValue {
   ) => Promise<void>;
   showHistoricalAnalysis: (entry: AnalysisHistoryEntry) => void;
   courses: TrackedCourse[];
-  addCourse: (course: NewCourse) => void;  updateCourseStatus: (id: string, status: TrackedCourseStatus) => void;
-  deleteCourse: (id: string) => void;
+  coursesLoading: boolean;
+  coursesError: string | null;
+  retryCourses: () => void;
+  addCourse: (course: NewCourse) => Promise<void>;
+  updateCourseStatus: (id: string, status: TrackedCourseStatus) => Promise<void>;
+  deleteCourse: (id: string) => Promise<void>;
 }
 
 const AppDataContext = createContext<AppDataContextValue | null>(null);
@@ -167,13 +169,21 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [userId, setUserId] = useState<string | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [courses, setCourses] = useState<TrackedCourse[]>([]);
+  const [coursesLoading, setCoursesLoading] = useState(true);
+  const [coursesError, setCoursesError] = useState<string | null>(null);
+  const [coursesReload, setCoursesReload] = useState(0);
   const activeUserId = useRef<string | null>(null);
+  const coursesRevision = useRef(0);
 
   const updateAuthenticatedUser = useCallback((nextUserId: string | null) => {
     if (activeUserId.current !== nextUserId) {
       activeUserId.current = nextUserId;
+      coursesRevision.current += 1;
       setUserId(nextUserId);
       setAnalysis(null);
+      setCourses([]);
+      setCoursesError(null);
+      setCoursesLoading(true);
     }
     setAuthReady(true);
   }, []);
@@ -190,6 +200,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       if (error) {
         setHistoryError("Couldn't identify the signed-in user for analysis history.");
         setHistoryLoading(false);
+        setCoursesError("Couldn't identify the signed-in user for courses.");
       }
       updateAuthenticatedUser(data.session?.user.id ?? null);
     }).catch((error: unknown) => {
@@ -197,6 +208,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       console.error("Could not load the signed-in user:", error);
       setHistoryError("Couldn't identify the signed-in user for analysis history.");
       setHistoryLoading(false);
+      setCoursesError("Couldn't identify the signed-in user for courses.");
+      setCoursesLoading(false);
       setAuthReady(true);
     });
 
@@ -239,6 +252,41 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     return () => { active = false; };
   }, [authReady, userId]);
 
+  useEffect(() => {
+    if (!authReady) return;
+    let active = true;
+
+    async function loadCourses() {
+      if (!userId) {
+        setCourses([]);
+        setCoursesLoading(false);
+        return;
+      }
+
+      setCoursesLoading(true);
+      setCoursesError(null);
+      try {
+        let revision: number;
+        let loaded: TrackedCourse[];
+        do {
+          revision = coursesRevision.current;
+          loaded = await listTrackedCourses(userId);
+          if (!active || activeUserId.current !== userId) return;
+        } while (revision !== coursesRevision.current);
+        setCourses(loaded);
+      } catch (error) {
+        if (!active || activeUserId.current !== userId) return;
+        console.error("Could not load tracked courses:", error);
+        setCoursesError("Couldn't load your courses. Check your connection and try again.");
+      } finally {
+        if (active && activeUserId.current === userId) setCoursesLoading(false);
+      }
+    }
+
+    void loadCourses();
+    return () => { active = false; };
+  }, [authReady, userId, coursesReload]);
+
   const completeResumeUpload = useCallback(async (
     nextAnalysis: Analysis,
     ownerId: string,
@@ -257,39 +305,50 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setAnalysis(entry.analysis);
   }, []);
 
- function addCourse(course: NewCourse) {
-  const d = new Date();
-  const pad = (n: number) => String(n).padStart(2, "0");
-  const today = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const addCourse = useCallback(async (course: NewCourse) => {
+    const ownerId = activeUserId.current;
+    if (!ownerId) throw new Error("Please sign in to save a course.");
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const enrolledAt = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const saved = await addTrackedCourse({
+      ...course, profileId: ownerId, status: course.status ?? "not_started", enrolledAt,
+    });
+    if (activeUserId.current !== ownerId) {
+      throw new Error("Your account changed while saving. Check your courses in the original account.");
+    }
+    coursesRevision.current += 1;
+    setCourses((prev) => [...prev.filter((item) => item.id !== saved.id), saved]);
+  }, []);
 
-  setCourses((prev) => [
-    ...prev,
-    {
-      ...course,
-      id: String(Date.now()),
-      profileId: "me",
-      status: course.status ?? "not_started",
-      enrolledAt: today,
-    },
-  ]);
-}
-   
-  
-
-  function updateCourseStatus(id: string, status: TrackedCourseStatus) {
+  const updateCourseStatus = useCallback(async (id: string, status: TrackedCourseStatus) => {
+    const ownerId = activeUserId.current;
+    if (!ownerId) throw new Error("Please sign in to update a course.");
+    await updateTrackedCourseStatus(ownerId, id, status);
+    if (activeUserId.current !== ownerId) return;
+    coursesRevision.current += 1;
     setCourses((prev) => prev.map((c) => (c.id === id ? { ...c, status } : c)));
-  }
+  }, []);
 
-  function deleteCourse(id: string) {
+  const deleteCourse = useCallback(async (id: string) => {
+    const ownerId = activeUserId.current;
+    if (!ownerId) throw new Error("Please sign in to delete a course.");
+    await deleteTrackedCourse(ownerId, id);
+    if (activeUserId.current !== ownerId) return;
+    coursesRevision.current += 1;
     setCourses((prev) => prev.filter((c) => c.id !== id));
-  }
+  }, []);
+
+  const retryCourses = useCallback(() => setCoursesReload((value) => value + 1), []);
 
   const value = useMemo(
     () => ({
       analysis, analysisHistory, historyLoading, historyError,
-      completeResumeUpload, showHistoricalAnalysis, courses, addCourse, updateCourseStatus, deleteCourse,
+      completeResumeUpload, showHistoricalAnalysis, courses, coursesLoading, coursesError,
+      retryCourses, addCourse, updateCourseStatus, deleteCourse,
     }),
-    [analysis, analysisHistory, historyLoading, historyError, completeResumeUpload, showHistoricalAnalysis, courses]
+    [analysis, analysisHistory, historyLoading, historyError, completeResumeUpload, showHistoricalAnalysis,
+      courses, coursesLoading, coursesError, retryCourses, addCourse, updateCourseStatus, deleteCourse]
   );
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;

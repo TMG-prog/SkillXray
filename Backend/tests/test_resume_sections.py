@@ -31,7 +31,7 @@ def test_unrecognized_resume_headings_preserve_full_credit():
     assert result.loc[0, "evidence_section"] is None
 
 
-def test_education_only_evidence_is_partial_but_project_evidence_is_full():
+def test_education_evidence_gets_full_credit_and_section_provenance():
     sections = parse_resume_sections(
         "Education\nStudied Java, Python, and Docker.\n"
         "Projects\nBuilt a deployment with Docker.\n"
@@ -62,8 +62,8 @@ def test_education_only_evidence_is_partial_but_project_evidence_is_full():
 
     result = apply_section_credit(table, candidates, spans, sections)
 
-    assert result["credit"].tolist() == [0.5, 1.0, 1.0, 0.0]
-    assert result["covered"].tolist() == [False, True, True, False]
+    assert result["credit"].tolist() == [1.0, 1.0, 1.0, 0.0]
+    assert result["covered"].tolist() == [True, True, True, False]
     assert result["evidence_section"].tolist() == [
         "education", "experience", "projects", None,
     ]

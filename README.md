@@ -60,7 +60,7 @@ The app calls the FastAPI `/analyze` endpoint with the resume file, target role,
 Service modules handle uploading a resume, requesting analysis, polling for status, retrieving skill gaps, and storing readiness data in app state. They keep client-side logic separate from the UI.
 
 ### Model Layer
-The API adapts the notebook-derived v2 scorer to the mobile response contract. It extracts resume skills, compares them with the selected role profile, and returns readiness, per-skill evidence, and weighted gaps. Recognized resume headings preserve evidence provenance: evidence found only in Education receives half credit, while a skill also evidenced in Experience or Projects receives full credit. If no known headings are detected, the existing scoring is retained and a warning is returned. Database-backed market trends compare dated postings across a 90-day recent window and the preceding 275-day baseline, with deduplication, minimum support, smoothing, classifications, and sample-posting evidence. The app persists each full report with its `skill_analyses` record and reloads the user's recent history from Supabase.
+The API adapts the notebook-derived v2 scorer to the mobile response contract. It extracts resume skills, compares them with the selected role profile, and returns readiness, per-skill evidence, and weighted gaps. Recognized resume headings preserve evidence provenance, but skills receive the same full readiness credit regardless of section. If no known headings are detected, the existing scoring is retained and a warning is returned. Database-backed market trends compare dated postings across a 90-day recent window and the preceding 275-day baseline, with deduplication, minimum support, smoothing, classifications, and sample-posting evidence. The app persists each full report with its `skill_analyses` record and reloads the user's recent history from Supabase.
 
 ---
 
@@ -210,6 +210,8 @@ This starts the development version of SkillXray on a physical phone; it does no
 5. To connect when the phone and computer cannot reach each other over the local network, stop the server and run `npx expo start --tunnel`, then scan the new QR code.
 
 The analysis API must be reachable from the phone and configured with the pipeline's required model and artifact files. In local development, allow the phone and computer to communicate over the same Wi-Fi network and set `EXPO_PUBLIC_API_URL` to the computer's LAN address.
+
+My Courses saves tracked courses to Supabase for the signed-in user and reloads them on sign-in. Apply `supabase/migrations/20261127010000_tracked_courses.sql` to enable the required table and user-scoped access policies.
 
 ---
 

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { View, Text, StyleSheet, Pressable, FlatList, Linking } from "react-native";
+import { ActivityIndicator, View, Text, StyleSheet, Pressable, FlatList, Linking } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -7,14 +7,12 @@ import { brand, SERIF } from "@/components/ui/theme";
 import { MonthCalendar } from "@/components/ui/calendar";
 import { StatusBadge } from "@/components/ui/statusbadge";
 import { useAppData } from "@/state/appdatacontext";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export function CourseTracker() {
   const router = useRouter();
-  const { courses } = useAppData();
+  const { courses, coursesLoading, coursesError, retryCourses } = useAppData();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
-  const insets = useSafeAreaInsets();
   const deadlineDates = useMemo(
     () => courses.filter((c) => c.deadline).map((c) => c.deadline!),
     [courses]
@@ -33,6 +31,25 @@ export function CourseTracker() {
       .slice(0, 1)[0];
   }, [courses]);
 
+  const courseNotice = coursesError ? (
+    <View style={styles.notice}>
+      <Text style={styles.noticeText}>{coursesError}</Text>
+      <Pressable onPress={retryCourses} accessibilityRole="button">
+        <Text style={styles.clearFilter}>Try again</Text>
+      </Pressable>
+    </View>
+  ) : null;
+
+  if (coursesLoading && courses.length === 0) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>My Courses</Text>
+        <ActivityIndicator color={brand.cyan} style={{ marginTop: 24 }} />
+        <Text style={styles.emptyText}>Loading your courses...</Text>
+      </View>
+    );
+  }
+
   if (courses.length === 0) {
     return (
       <View style={styles.container}>
@@ -48,7 +65,8 @@ export function CourseTracker() {
           Track the courses you've signed up for elsewhere, and keep an eye on deadlines.
         </Text>
 
-        <View style={styles.emptyState}>
+        {courseNotice}
+        {!coursesError && <View style={styles.emptyState}>
           <View style={styles.emptyIconCircle}>
             <Feather name="calendar" size={24} color={brand.cyan} />
           </View>
@@ -61,7 +79,7 @@ export function CourseTracker() {
               <Text style={styles.emptyButtonText}>Add your first course</Text>
             </LinearGradient>
           </Pressable>
-        </View>
+        </View>}
       </View>
     );
   }
@@ -79,6 +97,7 @@ export function CourseTracker() {
       <Text style={styles.subtitle}>
         Track the courses you've signed up for elsewhere, and keep an eye on deadlines.
       </Text>
+      {courseNotice}
 
       {upcoming && (
         <View style={styles.nextDeadlineCard}>
@@ -166,6 +185,8 @@ const styles = StyleSheet.create({
   listHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
   listHeader: { fontSize: 15, fontWeight: "700", color: brand.text },
   clearFilter: { fontSize: 14, color: brand.cyan },
+  notice: { marginBottom: 16, gap: 8 },
+  noticeText: { fontSize: 14, color: brand.muted },
   separator: { height: 1, backgroundColor: brand.border, marginVertical: 12 },
   courseRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" },
   courseTitle: { fontSize: 16, fontWeight: "600", color: brand.text },

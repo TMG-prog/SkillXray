@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   View,
   Text,
@@ -24,14 +24,6 @@ const STATUS_OPTIONS: { value: Status; label: string }[] = [
   { value: "completed", label: "Completed" },
 ];
 
-const pad = (n: number) => String(n).padStart(2, "0");
-
-// Local date as YYYY-MM-DD (avoids the off-by-one you get from toISOString near midnight).
-const todayISO = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-};
-
 const formatDate = (iso: string) => {
   const [y, m, d] = iso.split("-").map(Number);
   return new Date(y, m - 1, d).toLocaleDateString(undefined, {
@@ -52,26 +44,40 @@ export function AddCourseForm() {
   const [status, setStatus] = useState<Status>("in_progress");
   const [deadline, setDeadline] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
 
-  function handleSave() {
+  async function handleSave() {
+    if (savingRef.current) return;
     if (!title.trim()) {
       setError("Add a course title.");
       return;
     }
 
     const trimmedUrl = url.trim();
-    addCourse({
-      title: title.trim(),
-      provider: provider.trim(),
-      deadline: deadline ?? undefined,
-      url: trimmedUrl
-        ? /^https?:\/\//i.test(trimmedUrl)
-          ? trimmedUrl
-          : `https://${trimmedUrl}`
-        : undefined,
-    });
-
-    router.back();
+    savingRef.current = true;
+    setSaving(true);
+    setError(null);
+    try {
+      await addCourse({
+        title: title.trim(),
+        provider: provider.trim(),
+        status,
+        deadline: deadline ?? undefined,
+        url: trimmedUrl
+          ? /^https?:\/\//i.test(trimmedUrl)
+            ? trimmedUrl
+            : `https://${trimmedUrl}`
+          : undefined,
+      });
+      router.back();
+    } catch (err) {
+      console.error("Could not save tracked course:", err);
+      setError(err instanceof Error ? err.message : "Couldn't save your course. Check your connection and try again.");
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
   }
 
   return (
@@ -84,7 +90,7 @@ export function AddCourseForm() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.headerRow}>
-          <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel="Go back">
+          <Pressable onPress={() => router.back()} disabled={saving} hitSlop={12} accessibilityLabel="Go back">
             <Feather name="chevron-left" size={28} color={brand.text} />
           </Pressable>
           <Text style={styles.title}>Add course</Text>
@@ -173,8 +179,10 @@ export function AddCourseForm() {
           onPress={handleSave}
           style={styles.saveButton}
           accessibilityRole="button"
+          accessibilityState={{ disabled: saving, busy: saving }}
+          disabled={saving}
         >
-          <Text style={styles.saveButtonText}>Save course</Text>
+          <Text style={styles.saveButtonText}>{saving ? "Saving..." : "Save course"}</Text>
         </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>
